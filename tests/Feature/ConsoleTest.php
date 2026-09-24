@@ -164,6 +164,13 @@ class ConsoleTest extends TestCase
         }
     }
 
+    public function test_scripts_read_form_urls_with_get_attribute(): void
+    {
+        // A form field named "action" replaces form.action with the field,
+        // which sent town hall moderation to "/[object HTMLInputElement]".
+        $this->assertDoesNotMatchRegularExpression('/\bform\.action\b/', file_get_contents(public_path('js/app.js')));
+    }
+
     public function test_the_pwa_files_are_served(): void
     {
         $manifest = json_decode(file_get_contents(public_path('manifest.webmanifest')), true);

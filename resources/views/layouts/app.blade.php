@@ -44,6 +44,7 @@
                         <a href="{{ route('audit') }}" class="{{ $active('audit') }}">Audit log</a>
                         <a href="{{ route('broadcasts') }}" class="{{ $active(['broadcasts', 'broadcasts.*', 'contacts']) }}">Broadcasts</a>
                     @endif
+                    <a href="{{ route('townhall.manage') }}" class="{{ $active(['townhall.manage', 'townhall.moderate', 'townhall.create', 'townhall.edit']) }}">Town hall</a>
                     <span class="spacer"></span>
                     <a href="{{ route('push') }}" class="{{ $active('push') }}">Notifications</a>
                     <button type="button" data-install hidden>Install app</button>
@@ -99,6 +100,7 @@
                         <a href="{{ route('broadcasts') }}">Broadcasts</a>
                         <hr>
                     @endif
+                    <a href="{{ route('townhall.manage') }}">Town hall</a>
                     <a href="{{ route('push') }}">Notifications</a>
                     <button type="button" data-install hidden>Install app</button>
                     <form method="post" action="{{ route('logout') }}" data-logout>@csrf<input type="hidden" name="push_endpoint" data-push-endpoint><button type="submit">Log out ({{ $user->name }})</button></form>

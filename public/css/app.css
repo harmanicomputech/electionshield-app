@@ -263,3 +263,11 @@ table.compact th { font-size: 13px; color: var(--text-2); font-weight: 600; }
 table.compact .num { text-align: right; }
 input[type=file]::file-selector-button { min-height: 44px; padding: 0 16px; margin-right: 12px; border-radius: 8px; border: 1px solid var(--brand); background: var(--surface); color: var(--link); font: inherit; font-weight: 600; cursor: pointer; }
 .button:disabled, button:disabled { opacity: .45; cursor: not-allowed; }
+
+/* Town hall player (loads the stream only when tapped) */
+.player { position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: 12px; overflow: hidden; background: #0b1a14; }
+.player iframe, .player-start { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.player-start { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; background: #0b1a14; color: #fff; font: inherit; cursor: pointer; padding: 0; }
+.player-start img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .6; }
+.player-start .play { position: relative; width: 64px; height: 64px; border-radius: 50%; background: var(--bad); display: flex; align-items: center; justify-content: center; font-size: 26px; padding-left: 4px; }
+.player-start .player-label { position: relative; font-weight: 700; }

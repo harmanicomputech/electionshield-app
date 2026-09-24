@@ -7,7 +7,7 @@
   var meta = document.querySelector('meta[name="es-generated-at"]');
   var tz = (document.querySelector('meta[name="es-timezone"]') || {}).content || 'Africa/Lagos';
   var banner = document.querySelector('[data-offline-banner]');
-  var LIVE_PAGES = [/^\/$/, /^\/spread$/, /^\/collation(\/.*)?$/, /^\/monitor(\/.*)?$/, /^\/incidents$/];
+  var LIVE_PAGES = [/^\/$/, /^\/spread$/, /^\/collation(\/.*)?$/, /^\/monitor(\/.*)?$/, /^\/incidents$/, /^\/manage\/townhall\/[^/]+$/];
   var QUEUE_KEY = 'es-queue';
   var REFRESH_MS = 60000;
 
@@ -101,6 +101,7 @@
    * incident) are sent in the background; with no connection the action is
    * stored on this device and sent when the connection returns or the app is
    * opened again. The server treats every action as safe to repeat.
+   * (Read the URL with getAttribute: a field named "action" hides form.action.)
    */
   function readQueue() { return safe(function () { return JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]'); }) || []; }
   function writeQueue(items) { safe(function () { localStorage.setItem(QUEUE_KEY, JSON.stringify(items)); }); showQueue(); }
@@ -158,7 +159,7 @@
     document.querySelectorAll('form[data-queue]').forEach(function (form) {
       form.addEventListener('submit', function (event) {
         event.preventDefault();
-        var item = { id: Date.now() + '-' + Math.random().toString(36).slice(2), url: form.action, body: new URLSearchParams(new FormData(form)).toString(), label: form.getAttribute('data-queue') };
+        var item = { id: Date.now() + '-' + Math.random().toString(36).slice(2), url: form.getAttribute('action'), body: new URLSearchParams(new FormData(form)).toString(), label: form.getAttribute('data-queue') };
         var button = form.querySelector('button');
         if (button) { button.disabled = true; }
 
@@ -287,7 +288,7 @@
         shrink(file).then(function (blob) {
           var fields = [];
           new FormData(form).forEach(function (value, key) { if (key !== 'photo') { fields.push([key, value]); } });
-          var item = { id: Date.now() + '-' + Math.random().toString(36).slice(2), url: form.action, fields: fields, blob: blob, filename: (file.name || 'ec8a').replace(/\.[^.]+$/, '') + '.jpg', label: form.getAttribute('data-photo') };
+          var item = { id: Date.now() + '-' + Math.random().toString(36).slice(2), url: form.getAttribute('action'), fields: fields, blob: blob, filename: (file.name || 'ec8a').replace(/\.[^.]+$/, '') + '.jpg', label: form.getAttribute('data-photo') };
 
           var keep = function () {
             return queuePhoto(item).then(function () {
@@ -453,7 +454,67 @@
     });
   }
 
-  function bindMain() { bindRows(); bindGuide(); bindQueue(); bindFilters(); bindPhotos(); bindPush(); bindBroadcastForm(); }
+  // Town hall: load the stream only when tapped, and keep the approved
+  // questions fresh on the public page (this runs for visitors too).
+  function bindTownHall() {
+    document.querySelectorAll('[data-embed]').forEach(function (player) {
+      var start = player.querySelector('.player-start');
+      if (!start) { return; }
+      start.addEventListener('click', function () {
+        var frame = document.createElement('iframe');
+        frame.src = player.getAttribute('data-embed');
+        frame.title = player.getAttribute('data-title') || 'Live stream';
+        frame.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
+        frame.allowFullscreen = true;
+        player.innerHTML = '';
+        player.appendChild(frame);
+      });
+    });
+
+    var feed = document.querySelector('[data-townhall-feed]');
+    if (!feed || feed.hasAttribute('data-bound')) { return; }
+    feed.setAttribute('data-bound', '1');
+
+    var render = function (questions) {
+      feed.innerHTML = '';
+      if (!questions.length) {
+        var empty = document.createElement('li');
+        empty.className = 'muted small';
+        empty.textContent = 'No questions yet. Be the first to ask.';
+        feed.appendChild(empty);
+      }
+      questions.forEach(function (q) {
+        var li = document.createElement('li');
+        li.className = 'item' + (q.on_air ? ' urgent' : '');
+        if (q.on_air || q.answered) {
+          var badge = document.createElement('span');
+          badge.className = 'badge ' + (q.on_air ? 'bad' : 'good');
+          badge.textContent = q.on_air ? '● Being answered now' : '✓ Answered';
+          li.appendChild(badge);
+        }
+        var body = document.createElement('p');
+        body.className = 'note';
+        body.style.margin = '6px 0';
+        body.textContent = q.body;
+        var who = document.createElement('div');
+        who.className = 'meta';
+        who.textContent = q.name + (q.lga ? ', ' + q.lga : '');
+        li.appendChild(body);
+        li.appendChild(who);
+        feed.appendChild(li);
+      });
+    };
+
+    setInterval(function () {
+      if (document.hidden || !navigator.onLine) { return; }
+      fetch(feed.getAttribute('data-townhall-feed'), { headers: { Accept: 'application/json' } })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (data) { if (data) { render(data.questions); } })
+        .catch(function () {});
+    }, 20000);
+  }
+
+  function bindMain() { bindRows(); bindGuide(); bindQueue(); bindFilters(); bindPhotos(); bindPush(); bindBroadcastForm(); bindTownHall(); }
 
   // Install: Android/desktop Chrome prompt, and a Home Screen guide on iPhone.
   var deferred = null;

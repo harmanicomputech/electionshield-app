@@ -16,8 +16,10 @@ use App\Http\Controllers\Console\OfficialResultController;
 use App\Http\Controllers\Console\PhotoController;
 use App\Http\Controllers\Console\PushController;
 use App\Http\Controllers\Console\SystemController;
+use App\Http\Controllers\Console\TownHallManageController;
 use App\Http\Controllers\Console\UserController;
 use App\Http\Controllers\JoinController;
+use App\Http\Controllers\TownHallController;
 use App\Http\Middleware\RequireAdmin;
 use Illuminate\Support\Facades\Route;
 
@@ -31,6 +33,12 @@ Route::view('/offline', 'offline')->name('offline');
 // Public sign-up for election updates (the broadcast opt-in).
 Route::get('/join', [JoinController::class, 'show'])->name('join');
 Route::post('/join', [JoinController::class, 'store'])->middleware('throttle:5,1')->name('join.store');
+
+// The public digital town hall.
+Route::get('/townhall', [TownHallController::class, 'index'])->name('townhall');
+Route::get('/townhall/{session}', [TownHallController::class, 'show'])->name('townhall.show');
+Route::get('/townhall/{session}/questions', [TownHallController::class, 'questions'])->middleware('throttle:60,1')->name('townhall.questions');
+Route::post('/townhall/{session}/ask', [TownHallController::class, 'ask'])->middleware('throttle:6,1')->name('townhall.ask');
 
 // Agents' no-login EC8A upload link (the token is the authorisation, see UploadLink).
 Route::get('/u/{reference}/{token}', [AgentUploadController::class, 'show'])->middleware('throttle:30,1')->name('upload.agent');
@@ -52,6 +60,13 @@ Route::middleware('auth')->group(function () {
     Route::post('/incidents/{incident:reference}/acknowledge', [IncidentController::class, 'acknowledge'])->name('incidents.acknowledge');
     Route::post('/incidents/{incident:reference}/resolve', [IncidentController::class, 'resolve'])->name('incidents.resolve');
     Route::post('/incidents/{incident:reference}/reopen', [IncidentController::class, 'reopen'])->name('incidents.reopen');
+
+    // Running the town hall (sessions themselves are admin-only, below).
+    Route::get('/manage/townhall', [TownHallManageController::class, 'index'])->name('townhall.manage');
+    Route::get('/manage/townhall/{session}', [TownHallManageController::class, 'moderate'])->name('townhall.moderate');
+    Route::post('/manage/townhall/{session}/questions/{question}', [TownHallManageController::class, 'act'])->name('townhall.act');
+    Route::get('/manage/townhall/{session}/present', [TownHallManageController::class, 'present'])->name('townhall.present');
+    Route::get('/manage/townhall/{session}/present.json', [TownHallManageController::class, 'presentData'])->name('townhall.present.data');
 
     Route::get('/notifications', [PushController::class, 'show'])->name('push');
     Route::post('/push/subscribe', [PushController::class, 'subscribe'])->name('push.subscribe');
@@ -99,6 +114,12 @@ Route::middleware('auth')->group(function () {
         Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
 
         Route::get('/audit', [AuditController::class, 'index'])->name('audit');
+
+        Route::get('/manage/townhall-sessions/create', [TownHallManageController::class, 'create'])->name('townhall.create');
+        Route::post('/manage/townhall-sessions', [TownHallManageController::class, 'store'])->name('townhall.store');
+        Route::get('/manage/townhall-sessions/{session}/edit', [TownHallManageController::class, 'edit'])->name('townhall.edit');
+        Route::put('/manage/townhall-sessions/{session}', [TownHallManageController::class, 'update'])->name('townhall.update');
+        Route::post('/manage/townhall-sessions/{session}/reminder', [TownHallManageController::class, 'reminder'])->name('townhall.reminder');
 
         Route::get('/broadcasts', [BroadcastController::class, 'index'])->name('broadcasts');
         Route::get('/broadcasts/create', [BroadcastController::class, 'create'])->name('broadcasts.create');
