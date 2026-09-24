@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Console;
 
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
+use App\Models\PushSubscription;
 use App\Models\User;
 use App\Support\Audit;
 use Illuminate\Http\RedirectResponse;
@@ -108,6 +109,11 @@ class AuthController extends Controller
     public function logout(Request $request): RedirectResponse
     {
         if (Auth::check()) {
+            // The device's notifications stop with the session (shared phones).
+            if (filled($request->input('push_endpoint'))) {
+                $request->user()->pushSubscriptions()->where('endpoint_hash', PushSubscription::hashEndpoint((string) $request->input('push_endpoint')))->delete();
+            }
+
             Audit::record('auth.logout', 'Logged out');
         }
 

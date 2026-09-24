@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Console;
 use App\Http\Controllers\Controller;
 use App\Models\Incident;
 use App\Models\PollingUnit;
+use App\Models\PushSubscription;
 use App\Models\Result;
 use App\Models\SyncState;
 use App\Models\WebhookEvent;
+use App\Services\PushNotifier;
 use App\Services\UssdIngestor;
 use App\Services\UssdSync;
 use App\Support\Audit;
@@ -27,7 +29,7 @@ use Throwable;
  */
 class SystemController extends Controller
 {
-    public function show(UssdSync $sync): View
+    public function show(UssdSync $sync, PushNotifier $notifier): View
     {
         $heartbeat = Settings::get('scheduler_heartbeat');
 
@@ -49,6 +51,8 @@ class SystemController extends Controller
                 'Webhook events' => WebhookEvent::query()->count(),
             ],
             'showingRehearsal' => Settings::showingRehearsal(),
+            'pushConfigured' => $notifier->configured(),
+            'pushDevices' => PushSubscription::query()->count(),
         ]);
     }
 
@@ -114,6 +118,20 @@ class SystemController extends Controller
         Audit::record('system.migrate', 'Updated the database');
 
         return back()->with('status', 'The database is up to date.');
+    }
+
+    /**
+     * Create the Web Push (VAPID) keys, once.
+     */
+    public function pushKeys(PushNotifier $notifier): RedirectResponse
+    {
+        if (! $notifier->generateKeys()) {
+            return back()->with('error', 'Notification keys already exist. Changing them would stop every device\'s notifications.');
+        }
+
+        Audit::record('system.push_keys', 'Set up notification (VAPID) keys');
+
+        return back()->with('status', 'Notifications are set up. Each person can now turn them on under More → Notifications.');
     }
 
     public function dataView(Request $request): RedirectResponse

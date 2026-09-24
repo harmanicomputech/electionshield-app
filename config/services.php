@@ -46,7 +46,17 @@ return [
         'webhook_secret' => env('USSD_WEBHOOK_SECRET'),
         'api_url' => rtrim((string) env('USSD_API_URL', 'https://ussd.techatronagency.com/api'), '/'),
         'api_token' => env('USSD_API_TOKEN'),
+        // The USSD admin console (corrections are reviewed there).
+        'console_url' => rtrim((string) env('USSD_CONSOLE_URL', preg_replace('#/api/?$#', '', (string) env('USSD_API_URL', 'https://ussd.techatronagency.com/api')).'/admin'), '/'),
         'timeout' => (int) env('USSD_API_TIMEOUT', 20),
+    ],
+
+    // Web Push. Keys are normally generated on the System page; these
+    // override them. subject is a contact the push services can reach.
+    'push' => [
+        'public_key' => env('VAPID_PUBLIC_KEY'),
+        'private_key' => env('VAPID_PRIVATE_KEY'),
+        'subject' => env('VAPID_SUBJECT'),
     ],
 
 ];

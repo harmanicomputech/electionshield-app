@@ -11,6 +11,7 @@ The election-day situation room for the **Ebonyi State governorship election, Sa
 - **Incident feed:** urgent incidents first, filters by status, type and LGA, a call link to the reporting agent, and **acknowledge → resolve** tracking with a note. Actions taken offline are queued on the phone and sent when the connection returns. An unacknowledged urgent incident shows as a red badge on the Incidents tab and an alert on the dashboard.
 - **Official results vs PVT:** enter INEC's IReV result per PU (or mark "no upload on IReV") and the declared ward (EC8B) and LGA (EC8C) collations, by hand or by CSV import. Each PU is compared vote by vote with our agent's EC8A; collations are compared by share, since the PVT may not cover every PU yet. Admins can export the flagged PUs as CSV evidence for petitions.
 - **EC8A photos:** coordinators upload the photographed result sheet for a result reference, and agents can send it themselves through a no-login link tied to their reference (the USSD service can put it in the SMS receipt; see `docs/WEB-APP-HANDOFF.md`). Photos are shrunk on the phone for 3G, queued on the device with no signal, kept byte for byte with a SHA-256 fingerprint, and checked by a coordinator as "matches" or "does not match" our figures. The evidence export lists each PU's photos and fingerprints.
+- **Notifications (Web Push):** each person opts in per device (More → Notifications) to alerts for new urgent incidents and for corrections waiting for review, even with the app closed. An admin sets it up once with **System → Set up notifications**. On iPhone this needs iOS 16.4+ and the app added to the Home Screen. Logging out stops that device's alerts.
 - **Mobile first and installable (PWA):** it works at 360px, installs to the home screen, starts offline, and shows how old its data is when the network drops.
 
 All data comes from the **Election Shield USSD service** (`harmanicomputech/claude`), where polling agents submit results by USSD. That service is the source of truth. This app keeps a copy, received two ways (see `docs/WEB-APP-HANDOFF.md`):
@@ -82,6 +83,6 @@ In order of election-day value, per the brief:
 2. ~~PU monitoring board and incident feed with acknowledge/resolve~~ (done). A map needs PU coordinates, which the register doesn't have yet; the board is the list view.
 3. ~~Official results intake and comparison, with an evidence export~~ (done)
 4. ~~EC8A photo upload, tied to the result reference, with offline queueing~~ (done). Next step on the USSD side: add the upload link to the agent's SMS receipt.
-5. Web Push for urgent incidents and corrections awaiting review.
+5. ~~Web Push for urgent incidents and corrections awaiting review~~ (done)
 6. Broadcast system (SMS/WhatsApp).
 7. Digital town hall.

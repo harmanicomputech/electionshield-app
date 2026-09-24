@@ -96,6 +96,16 @@
     </section>
 
     <section class="card">
+        <h2>Notifications (Web Push)</h2>
+        @if ($pushConfigured)
+            <p class="small"><span class="badge good">✓ Set up</span> {{ $pushDevices }} device{{ $pushDevices === 1 ? '' : 's' }} opted in. Each person turns them on under More → Notifications.</p>
+        @else
+            <p class="small">Alerts for urgent incidents and corrections on coordinators' phones. Set up once; the keys are kept in the database.</p>
+            <form method="post" action="{{ route('system.push-keys') }}">@csrf<button class="button secondary" type="submit">Set up notifications</button></form>
+        @endif
+    </section>
+
+    <section class="card">
         <h2>After uploading a new version</h2>
         <p class="small">Bring the database up to date. It is safe to press at any time.</p>
         <form method="post" action="{{ route('system.migrate') }}">@csrf<button class="button secondary" type="submit">Update database</button></form>

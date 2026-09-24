@@ -12,6 +12,7 @@ use App\Http\Controllers\Console\OfficialCollationController;
 use App\Http\Controllers\Console\OfficialImportController;
 use App\Http\Controllers\Console\OfficialResultController;
 use App\Http\Controllers\Console\PhotoController;
+use App\Http\Controllers\Console\PushController;
 use App\Http\Controllers\Console\SystemController;
 use App\Http\Controllers\Console\UserController;
 use App\Http\Middleware\RequireAdmin;
@@ -45,6 +46,11 @@ Route::middleware('auth')->group(function () {
     Route::post('/incidents/{incident:reference}/resolve', [IncidentController::class, 'resolve'])->name('incidents.resolve');
     Route::post('/incidents/{incident:reference}/reopen', [IncidentController::class, 'reopen'])->name('incidents.reopen');
 
+    Route::get('/notifications', [PushController::class, 'show'])->name('push');
+    Route::post('/push/subscribe', [PushController::class, 'subscribe'])->name('push.subscribe');
+    Route::post('/push/unsubscribe', [PushController::class, 'unsubscribe'])->name('push.unsubscribe');
+    Route::post('/push/test', [PushController::class, 'test'])->middleware('throttle:5,1')->name('push.test');
+
     Route::get('/photos', [PhotoController::class, 'index'])->name('photos');
     Route::post('/photos', [PhotoController::class, 'store'])->middleware('throttle:30,1')->name('photos.store');
     Route::get('/photos/{photo}', [PhotoController::class, 'show'])->name('photos.show');
@@ -77,6 +83,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/system/sync', [SystemController::class, 'sync'])->name('system.sync');
         Route::post('/system/reprocess', [SystemController::class, 'reprocess'])->name('system.reprocess');
         Route::post('/system/migrate', [SystemController::class, 'migrate'])->name('system.migrate');
+        Route::post('/system/push-keys', [SystemController::class, 'pushKeys'])->name('system.push-keys');
         Route::post('/system/data-view', [SystemController::class, 'dataView'])->name('system.data-view');
 
         Route::get('/users', [UserController::class, 'index'])->name('users');

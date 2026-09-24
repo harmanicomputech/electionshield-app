@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\PushAlerts;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -18,6 +19,11 @@ class Incident extends Model
         'reference', 'polling_unit_code', 'lga', 'ward', 'type', 'type_label', 'urgent',
         'note', 'agent_name', 'agent_phone', 'reported_at', 'rehearsal',
     ];
+
+    protected static function booted(): void
+    {
+        static::created(fn (Incident $incident) => PushAlerts::incidentCreated($incident));
+    }
 
     protected function casts(): array
     {

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\ResultStatus;
+use App\Services\PushAlerts;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -16,6 +17,11 @@ class Result extends Model
         'corrects_reference', 'agent_name', 'agent_phone',
         'submitted_at', 'reviewed_at', 'reviewed_by', 'review_note', 'rehearsal',
     ];
+
+    protected static function booted(): void
+    {
+        static::created(fn (Result $result) => PushAlerts::resultCreated($result));
+    }
 
     protected function casts(): array
     {

@@ -69,7 +69,11 @@ In **Cron Jobs**, add one job that runs every minute (`* * * * *`):
 
 Use the real path shown in File Manager and your host's PHP 8.3+ binary. Within two minutes, **Scheduler cron** on the System page turns **Running**. From then on it syncs every 3 minutes.
 
-## 7. Add your team
+## 7. Turn on notifications
+
+On the **System** page, press **Set up notifications** once. Then each coordinator opens **More → Notifications** on their phone and presses **Turn on notifications**. On iPhone, add the app to the Home Screen first (iOS 16.4 or later). Set `VAPID_SUBJECT` in `.env` to a contact email, as `mailto:you@example.com`.
+
+## 8. Add your team
 
 Under **Users**, give each coordinator their own account. Admins manage users and the connection; coordinators see the dashboards. Every login and change is in the **Audit log**.
 

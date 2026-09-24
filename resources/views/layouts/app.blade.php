@@ -18,6 +18,8 @@
     <meta name="theme-color" content="#0f6e4f">
     <meta name="es-generated-at" content="{{ now()->toIso8601String() }}">
     <meta name="es-timezone" content="{{ config('election.timezone') }}">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    @if ($user && ($pushKey = app(\App\Services\PushNotifier::class)->publicKey()))<meta name="es-push-key" content="{{ $pushKey }}">@endif
     <title>@yield('title') · Election Shield</title>
     <link rel="manifest" href="/manifest.webmanifest">
     <link rel="icon" href="/icons/icon-32.png" sizes="32x32">
@@ -42,8 +44,9 @@
                         <a href="{{ route('audit') }}" class="{{ $active('audit') }}">Audit log</a>
                     @endif
                     <span class="spacer"></span>
+                    <a href="{{ route('push') }}" class="{{ $active('push') }}">Notifications</a>
                     <button type="button" data-install hidden>Install app</button>
-                    <form method="post" action="{{ route('logout') }}" data-logout>@csrf<button type="submit">Log out</button></form>
+                    <form method="post" action="{{ route('logout') }}" data-logout>@csrf<input type="hidden" name="push_endpoint" data-push-endpoint><button type="submit">Log out</button></form>
                 </nav>
             @endif
         </div>
@@ -94,8 +97,9 @@
                         <a href="{{ route('audit') }}">Audit log</a>
                         <hr>
                     @endif
+                    <a href="{{ route('push') }}">Notifications</a>
                     <button type="button" data-install hidden>Install app</button>
-                    <form method="post" action="{{ route('logout') }}" data-logout>@csrf<button type="submit">Log out ({{ $user->name }})</button></form>
+                    <form method="post" action="{{ route('logout') }}" data-logout>@csrf<input type="hidden" name="push_endpoint" data-push-endpoint><button type="submit">Log out ({{ $user->name }})</button></form>
                 </div>
             </details>
         </nav>

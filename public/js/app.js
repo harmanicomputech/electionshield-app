@@ -320,7 +320,104 @@
     });
   }
 
-  function bindMain() { bindRows(); bindGuide(); bindQueue(); bindFilters(); bindPhotos(); }
+  /*
+   * Web Push, opted in per device on the Notifications page. The endpoint
+   * is also put in the logout form, so logging out stops this device's alerts.
+   */
+  var pushKeyMeta = document.querySelector('meta[name="es-push-key"]');
+  var csrf = (document.querySelector('meta[name="csrf-token"]') || {}).content;
+  var pushSupported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+
+  function keyBytes(base64) {
+    var padded = (base64 + '===='.slice((base64.length % 4) || 4)).replace(/-/g, '+').replace(/_/g, '/');
+    var raw = atob(padded);
+    var bytes = new Uint8Array(raw.length);
+    for (var i = 0; i < raw.length; i++) { bytes[i] = raw.charCodeAt(i); }
+    return bytes;
+  }
+
+  function currentSubscription() {
+    if (!pushSupported) { return Promise.resolve(null); }
+    return navigator.serviceWorker.ready.then(function (reg) { return reg.pushManager.getSubscription(); }).catch(function () { return null; });
+  }
+
+  function postJson(url, data) {
+    return fetch(url, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf || '' }, body: JSON.stringify(data) });
+  }
+
+  function bindPush() {
+    currentSubscription().then(function (sub) {
+      document.querySelectorAll('[data-push-endpoint]').forEach(function (input) { input.value = sub ? sub.endpoint : ''; });
+    });
+
+    var panel = document.querySelector('[data-push-panel]');
+    if (!panel) { return; }
+    var status = panel.querySelector('[data-push-status]');
+    var buttons = {
+      enable: panel.querySelector('[data-push-enable]'), save: panel.querySelector('[data-push-save]'),
+      test: panel.querySelector('[data-push-test]'), disable: panel.querySelector('[data-push-disable]')
+    };
+    var topics = function () { return Array.prototype.filter.call(panel.querySelectorAll('[data-push-topic]'), function (c) { return c.checked; }).map(function (c) { return c.value; }); };
+    var ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    var say = function (text) { status.textContent = text; };
+    var show = function (on) {
+      buttons.enable.hidden = on; buttons.save.hidden = !on; buttons.test.hidden = !on; buttons.disable.hidden = !on;
+    };
+
+    if (!pushSupported || !pushKeyMeta) {
+      say(ios ? 'Add Election Shield to your Home Screen first, then open it from there.' : 'This browser cannot receive notifications. Try Chrome on Android or a desktop browser.');
+      if (ios) { panel.querySelector('[data-push-ios]').classList.add('show'); }
+      return;
+    }
+
+    var register = function (sub) {
+      var body = sub.toJSON();
+      body.topics = topics();
+      body.contentEncoding = (PushManager.supportedContentEncodings || ['aes128gcm'])[0];
+      return postJson('/push/subscribe', body).then(function (r) { if (!r.ok) { throw new Error('server ' + r.status); } });
+    };
+
+    currentSubscription().then(function (sub) {
+      if (Notification.permission === 'denied') { say('Notifications are blocked for this site. Allow them in the browser settings, then reload.'); return; }
+      show(!!sub);
+      say(sub ? 'On for this device.' : 'Off for this device.');
+      if (sub) { register(sub).catch(function () {}); } // keep the server copy fresh
+    });
+
+    buttons.enable.addEventListener('click', function () {
+      if (!topics().length) { say('Choose at least one kind of alert.'); return; }
+      buttons.enable.disabled = true;
+      Notification.requestPermission().then(function (permission) {
+        if (permission !== 'granted') { throw new Error('Permission not given'); }
+        return navigator.serviceWorker.ready;
+      }).then(function (reg) {
+        return reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(pushKeyMeta.content) });
+      }).then(function (sub) {
+        return register(sub).then(function () { show(true); say('On for this device. Try "Send a test".'); bindPush(); });
+      }).catch(function (error) {
+        say('Could not turn notifications on: ' + error.message);
+      }).then(function () { buttons.enable.disabled = false; });
+    });
+
+    buttons.save.addEventListener('click', function () {
+      if (!topics().length) { say('Choose at least one kind of alert, or turn notifications off.'); return; }
+      currentSubscription().then(function (sub) { return sub && register(sub); }).then(function () { say('Saved.'); }, function () { say('Could not save. Check your connection.'); });
+    });
+
+    buttons.test.addEventListener('click', function () {
+      say('Sending a test…');
+      postJson('/push/test', {}).then(function (r) { say(r.ok ? 'Test sent. It should appear in a few seconds.' : 'The test could not be delivered.'); }, function () { say('No connection.'); });
+    });
+
+    buttons.disable.addEventListener('click', function () {
+      currentSubscription().then(function (sub) {
+        if (!sub) { return; }
+        return postJson('/push/unsubscribe', { endpoint: sub.endpoint }).then(function () { return sub.unsubscribe(); });
+      }).then(function () { show(false); say('Off for this device.'); bindPush(); }, function () { say('Could not turn off. Check your connection.'); });
+    });
+  }
+
+  function bindMain() { bindRows(); bindGuide(); bindQueue(); bindFilters(); bindPhotos(); bindPush(); }
 
   // Install: Android/desktop Chrome prompt, and a Home Screen guide on iPhone.
   var deferred = null;

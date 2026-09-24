@@ -8,7 +8,7 @@
  * - EC8A photos taken offline wait in IndexedDB ('es-queue' → 'photos',
  *   written by app.js) and are sent on the 'es-photos' Background Sync.
  */
-const VERSION = 'v3';
+const VERSION = 'v4';
 const SHELL = `es-shell-${VERSION}`;
 const PAGES = 'es-pages';
 const SHELL_FILES = [
@@ -139,3 +139,44 @@ async function sendQueuedPhotos() {
     await onStore(db, 'readwrite', (store) => store.delete(item.id));
   }
 }
+
+// Web Push: urgent incidents and corrections waiting for review.
+self.addEventListener('push', (event) => {
+  let message = { title: 'Election Shield', body: 'Something needs your attention.', url: '/' };
+  try {
+    message = { ...message, ...event.data.json() };
+  } catch (error) {
+    // No or unreadable payload: show the generic alert.
+  }
+
+  event.waitUntil(self.registration.showNotification(message.title, {
+    body: message.body,
+    tag: message.tag,
+    renotify: Boolean(message.tag),
+    requireInteraction: Boolean(message.urgent),
+    icon: '/icons/icon-192.png',
+    badge: '/icons/icon-32.png',
+    data: { url: message.url || '/' },
+  }));
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const target = new URL(event.notification.data?.url || '/', self.location.origin).href;
+
+  event.waitUntil((async () => {
+    // Corrections are reviewed in the USSD console, on another site.
+    if (new URL(target).origin !== self.location.origin) {
+      return self.clients.openWindow(target);
+    }
+
+    const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const client of windows) {
+      if (new URL(client.url).origin === self.location.origin && 'focus' in client) {
+        await client.focus();
+        return client.navigate ? client.navigate(target) : undefined;
+      }
+    }
+    return self.clients.openWindow(target);
+  })());
+});
