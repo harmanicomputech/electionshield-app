@@ -21,6 +21,10 @@
     <div class="stat"><b>{{ number_format($state->rejected) }}</b><span>Rejected votes</span></div>
 </div>
 
+@if ($urgentOpen > 0)
+    <a class="flash bad" role="alert" href="{{ route('incidents', ['status' => 'open', 'urgent' => 1]) }}" style="display:block;text-decoration:none">⚠ <b>{{ $urgentOpen }} urgent {{ $urgentOpen === 1 ? 'incident' : 'incidents' }}</b> not yet acknowledged. Open the incident feed →</a>
+@endif
+
 @if ($duplicates > 0)
     <div class="flash bad" role="alert">{{ $duplicates }} PU(s) have more than one accepted result; the latest is counted. Run a full import under System to repair.</div>
 @endif
@@ -76,7 +80,18 @@
     </section>
 </div>
 
-<section class="card" aria-labelledby="h-weak" style="margin-top:16px">
+<section class="card" aria-labelledby="h-field" style="margin-top:16px">
+    <h2 id="h-field">Field status</h2>
+    <dl class="kv">
+        <dt>Agents checked in</dt><dd>{{ number_format($field->checkedIn) }} of {{ number_format($field->units) }} PUs ({{ $field->percent($field->checkedIn) }}%)</dd>
+        <dt>Materials</dt><dd>@include('partials.materials-bar', ['tally' => $field])</dd>
+        <dt>Unresolved incidents</dt><dd>{{ $field->openIncidents }}@if ($field->urgentIncidents) <span class="badge bad">{{ $field->urgentIncidents }} urgent</span>@endif</dd>
+        <dt>PUs needing attention</dt><dd>{{ number_format($field->needsAttention) }}</dd>
+    </dl>
+    <p class="small muted" style="margin-top:12px"><a href="{{ route('monitor') }}">PU monitoring board →</a> · <a href="{{ route('incidents') }}">Incident feed →</a></p>
+</section>
+
+<section class="card" aria-labelledby="h-weak">
     <h2 id="h-weak">Weak links @if ($focus)<span class="muted small">for {{ $focus }}</span>@endif</h2>
     @if ($links === [])
         <p class="muted">None: every LGA is above {{ (int) $tracker->share + (int) config('election.near_margin') }}% with good coverage.</p>

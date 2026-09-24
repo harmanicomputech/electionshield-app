@@ -184,7 +184,8 @@ class UssdIngestor
 
     /**
      * Upsert a PU from the register or from an event's `polling_unit`, and
-     * return its fields. Events may carry only the code.
+     * return its fields. A record carrying only the code gets its LGA and
+     * ward from the register.
      *
      * @param  array<string, mixed>  $data
      * @return array{code: string, name?: string, ward?: string, lga?: string, registered_voters?: int}
@@ -201,6 +202,9 @@ class UssdIngestor
 
         if ($fields !== []) {
             PollingUnit::updateOrCreate(['code' => $code], $fields);
+        } else {
+            // Only the code: take the LGA and ward from the register.
+            $fields = array_filter(PollingUnit::query()->where('code', $code)->first(['lga', 'ward'])?->only(['lga', 'ward']) ?? []);
         }
 
         return ['code' => $code, ...$fields];

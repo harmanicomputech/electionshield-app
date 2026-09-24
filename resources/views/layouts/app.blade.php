@@ -1,11 +1,13 @@
 @php
     $user = auth()->user();
+    // [route, label, icon path, routes it covers]
     $tabs = [
-        ['dashboard', 'Dashboard', 'M3 13h8V3H3v10Zm0 8h8v-6H3v6Zm10 0h8V11h-8v10Zm0-18v6h8V3h-8Z'],
-        ['spread', '25% rule', 'M4 20V10m6 10V4m6 16v-7m4 7H2'],
-        ['collation', 'Collation', 'M4 6h16M4 12h16M4 18h10'],
+        ['dashboard', 'Dashboard', 'M3 13h8V3H3v10Zm0 8h8v-6H3v6Zm10 0h8V11h-8v10Zm0-18v6h8V3h-8Z', ['dashboard']],
+        ['incidents', 'Incidents', 'M12 3 2 20h20L12 3Zm0 6v5m0 3h.01', ['incidents']],
+        ['monitor', 'PUs', 'M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21Zm0-9a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z', ['monitor', 'monitor.*']],
+        ['collation', 'Results', 'M4 20V10m6 10V4m6 16v-7m4 7H2', ['collation', 'collation.*', 'spread']],
     ];
-    $active = fn (string $name) => request()->routeIs($name, $name.'.*') ? 'on' : '';
+    $active = fn (string|array $names) => request()->routeIs(...(array) $names) ? 'on' : '';
 @endphp
 <!DOCTYPE html>
 <html lang="en">
@@ -31,8 +33,8 @@
             <a class="brand" href="{{ $user ? route('dashboard') : route('login') }}"><img src="/icons/icon-192.png" alt="">Election Shield</a>
             @if ($user)
                 <nav class="topnav" aria-label="Main">
-                    @foreach ($tabs as [$name, $label])
-                        <a href="{{ route($name) }}" class="{{ $active($name) }}">{{ $label }}</a>
+                    @foreach ($tabs as [$name, $label, $path, $covers])
+                        <a href="{{ route($name) }}" class="{{ $active($covers) }}" data-live-id="top-{{ $name }}">{{ $label }}@if ($name === 'incidents' && $urgentOpen)<span class="count" aria-label="{{ $urgentOpen }} urgent open">{{ $urgentOpen }}</span>@endif</a>
                     @endforeach
                     @if ($user->isAdmin())
                         <a href="{{ route('system') }}" class="{{ $active('system') }}">System</a>
@@ -51,6 +53,7 @@
         <div class="banner rehearsal" role="status">Rehearsal data: these are not real results.</div>
     @endif
     <div class="banner offline" data-offline-banner hidden role="status"></div>
+    <div class="banner queue" data-queue-banner hidden role="status"></div>
 
     <main class="wrap" id="main">
         @if (session('status'))<div class="flash ok" role="status">{{ session('status') }}</div>@endif
@@ -70,9 +73,12 @@
 
     @if ($user)
         <nav class="tabbar" aria-label="Main">
-            @foreach ($tabs as [$name, $label, $path])
-                <a href="{{ route($name) }}" class="{{ $active($name) }}" @if ($active($name)) aria-current="page" @endif>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ $path }}"/></svg>
+            @foreach ($tabs as [$name, $label, $path, $covers])
+                <a href="{{ route($name) }}" class="{{ $active($covers) }}" data-live-id="tab-{{ $name }}" @if ($active($covers)) aria-current="page" @endif>
+                    <span class="icon-wrap">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ $path }}"/></svg>
+                        @if ($name === 'incidents' && $urgentOpen)<span class="count" aria-label="{{ $urgentOpen }} urgent open">{{ $urgentOpen }}</span>@endif
+                    </span>
                     {{ $label }}
                 </a>
             @endforeach

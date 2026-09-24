@@ -7,6 +7,8 @@ The election-day situation room for the **Ebonyi State governorship election, Sa
 - **25% tracker:** every candidate's share in every LGA, against the 25% line.
 - **Weak links:** LGAs where our candidate is under or near 25%, or where few PUs have reported.
 - **Collation:** state → LGA → ward → polling unit, with the EC8A figures and reference of each result.
+- **PU monitoring board:** for every PU, agent check-in, the latest materials report (arrived / incomplete / not arrived), result and open incidents, by LGA and ward, with a "need attention" filter.
+- **Incident feed:** urgent incidents first, filters by status, type and LGA, a call link to the reporting agent, and **acknowledge → resolve** tracking with a note. Actions taken offline are queued on the phone and sent when the connection returns. An unacknowledged urgent incident shows as a red badge on the Incidents tab and an alert on the dashboard.
 - **Mobile first and installable (PWA):** it works at 360px, installs to the home screen, starts offline, and shows how old its data is when the network drops.
 
 All data comes from the **Election Shield USSD service** (`harmanicomputech/claude`), where polling agents submit results by USSD. That service is the source of truth. This app keeps a copy, received two ways (see `docs/WEB-APP-HANDOFF.md`):
@@ -73,7 +75,7 @@ Shared hosting (DirectAdmin/cPanel, no terminal): see `docs/DEPLOY-SHARED-HOSTIN
 In order of election-day value, per the brief:
 
 1. ~~PVT dashboard with collation and the 25% tracker~~ (done)
-2. PU monitoring board (check-in, materials, result per PU) and a live incident feed with acknowledge/resolve. The data is already being received and stored.
+2. ~~PU monitoring board and incident feed with acknowledge/resolve~~ (done). A map needs PU coordinates, which the register doesn't have yet; the board is the list view.
 3. Official results intake (IReV per PU, EC8B/EC8C collations) and comparison against the PVT, with an evidence export.
 4. EC8A photo upload, tied to the result reference, with offline queueing.
 5. Web Push for urgent incidents and corrections awaiting review.

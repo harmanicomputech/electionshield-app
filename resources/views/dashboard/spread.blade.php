@@ -13,6 +13,8 @@
     <p class="muted">Section 179(2): the winner needs the most votes and at least {{ (int) $threshold }}% of the votes in at least {{ $tracker->required }} of {{ $tracker->lgaCount }} LGAs. Shares are of valid votes, on current figures.</p>
 </div>
 
+@include('partials.results-tabs')
+
 <div class="stats">
     @foreach ($tracker->candidates() as $row)
         <div class="stat">

@@ -46,6 +46,7 @@
 }
 
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 html { -webkit-text-size-adjust: 100%; }
 body { margin: 0; font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); overflow-x: hidden; }
 a { color: var(--link); }
@@ -190,3 +191,52 @@ dl.kv dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
 .footer { color: var(--muted); font-size: 13px; margin-top: 24px; }
 .install-guide { display: none; }
 .install-guide.show { display: block; }
+
+/* Segmented tabs and filter chips */
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+.tabs a { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--text); text-decoration: none; font-size: 14px; font-weight: 600; }
+.tabs a.on { background: var(--brand); border-color: var(--brand); color: #fff; }
+.tabs a b { font-variant-numeric: tabular-nums; opacity: .85; }
+.filters { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; align-items: end; margin-bottom: 16px; }
+.filters label { margin-top: 0; }
+.filters .wide { grid-column: 1 / -1; }
+@media (min-width: 768px) { .filters { grid-template-columns: repeat(4, minmax(0, 1fr)); } .filters .wide { grid-column: auto; } }
+
+/* Tab bar count badge */
+.tabbar .count, .topnav .count { display: inline-flex; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--bad); color: #fff; font-size: 11px; font-weight: 700; align-items: center; justify-content: center; }
+.tabbar .icon-wrap { position: relative; display: inline-flex; }
+.tabbar .icon-wrap .count { position: absolute; top: -6px; right: -12px; }
+.topnav .count { margin-left: 6px; background: #fff; color: var(--bad); }
+
+/* Status stack (materials): status colours with a text legend, never colour alone */
+.statusbar { display: flex; height: 10px; border-radius: 4px; overflow: hidden; background: var(--track); gap: 2px; margin: 4px 0; }
+.statusbar span { display: block; min-width: 0; }
+.statusbar .good { background: var(--good); } .statusbar .warn { background: var(--warn); } .statusbar .bad { background: var(--bad); } .statusbar .none { background: var(--track); }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 13px; color: var(--text-2); }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 4px; vertical-align: -1px; }
+.legend i.good { background: var(--good); } .legend i.warn { background: var(--warn); } .legend i.bad { background: var(--bad); } .legend i.none { background: var(--track); border: 1px solid var(--line); }
+.cell-stack { display: grid; gap: 2px; min-width: 160px; }
+@media (max-width: 767.98px) {
+  table.stack td.full { display: block; text-align: left; }
+  table.stack td.full::before { display: block; padding: 0 0 2px; }
+  table.stack td.full .cell-stack { min-width: 0; }
+}
+
+/* PU and incident cards */
+.list { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+@media (min-width: 1024px) { .list.two { grid-template-columns: 1fr 1fr; } }
+.item { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+.item.urgent { border-left: 4px solid var(--bad); }
+.item h3 { font-size: 16px; margin: 0; }
+.item .meta { color: var(--muted); font-size: 13px; }
+.item .badges { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+.item .note { margin: 8px 0; white-space: pre-line; }
+.item .response { font-size: 13px; color: var(--text-2); margin: 6px 0; }
+.item .actions { margin-top: 8px; }
+.item details summary { list-style: none; }
+.item details summary::-webkit-details-marker { display: none; }
+textarea { width: 100%; min-height: 72px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; font: inherit; background: var(--surface); color: var(--text); }
+.queue-state { font-size: 13px; font-weight: 600; margin-top: 6px; }
+.queue-state.queued { color: var(--warn); } .queue-state.sent { color: var(--good); } .queue-state.failed { color: var(--bad); }
+.banner.queue { background: var(--warn-bg); color: var(--warn); border-bottom: 1px solid var(--line); }
+a.tel { font-weight: 600; white-space: nowrap; }

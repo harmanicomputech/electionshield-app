@@ -1,12 +1,12 @@
 /*
  * Election Shield service worker.
  * - App shell (CSS, JS, icons, offline page): cache first, for an instant start.
- * - Data pages (dashboard, 25% tracker, collation): network first, falling back
+ * - Data pages (dashboard, 25% tracker, collation, PU monitoring): network first, falling back
  *   to the last copy seen; the page itself shows how old its data is.
  * - Nothing else is cached (login, admin pages, anything with phone numbers).
  * - The page cache is cleared on logout.
  */
-const VERSION = 'v1';
+const VERSION = 'v2';
 const SHELL = `es-shell-${VERSION}`;
 const PAGES = 'es-pages';
 const SHELL_FILES = [
@@ -18,7 +18,8 @@ const SHELL_FILES = [
   '/icons/icon-512.png',
   '/icons/icon-32.png',
 ];
-const DATA_PAGES = [/^\/$/, /^\/spread$/, /^\/collation(\/.*)?$/];
+// Never the incident feed: it shows agents' phone numbers.
+const DATA_PAGES = [/^\/$/, /^\/spread$/, /^\/collation(\/.*)?$/, /^\/monitor(\/.*)?$/];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(SHELL).then((cache) => cache.addAll(SHELL_FILES)).then(() => self.skipWaiting()));

@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Models\Incident;
 use App\Models\SyncState;
 use App\Models\WebhookEvent;
 use App\Support\Settings;
@@ -23,8 +24,23 @@ class AppServiceProvider extends ServiceProvider
             $view->with([
                 'showingRehearsal' => Settings::showingRehearsal(),
                 'lastData' => $this->lastDataReceived(),
+                'urgentOpen' => $this->urgentOpenIncidents(),
             ]);
         });
+    }
+
+    /**
+     * Urgent incidents nobody has acknowledged yet (the Incidents tab badge).
+     */
+    private function urgentOpenIncidents(): int
+    {
+        try {
+            return auth()->check()
+                ? Incident::query()->where('rehearsal', Settings::showingRehearsal())->where('urgent', true)->withResponseStatus(Incident::OPEN)->count()
+                : 0;
+        } catch (Throwable) {
+            return 0;
+        }
     }
 
     /**
