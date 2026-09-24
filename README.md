@@ -9,6 +9,7 @@ The election-day situation room for the **Ebonyi State governorship election, Sa
 - **Collation:** state → LGA → ward → polling unit, with the EC8A figures and reference of each result.
 - **PU monitoring board:** for every PU, agent check-in, the latest materials report (arrived / incomplete / not arrived), result and open incidents, by LGA and ward, with a "need attention" filter.
 - **Incident feed:** urgent incidents first, filters by status, type and LGA, a call link to the reporting agent, and **acknowledge → resolve** tracking with a note. Actions taken offline are queued on the phone and sent when the connection returns. An unacknowledged urgent incident shows as a red badge on the Incidents tab and an alert on the dashboard.
+- **Official results vs PVT:** enter INEC's IReV result per PU (or mark "no upload on IReV") and the declared ward (EC8B) and LGA (EC8C) collations, by hand or by CSV import. Each PU is compared vote by vote with our agent's EC8A; collations are compared by share, since the PVT may not cover every PU yet. Admins can export the flagged PUs as CSV evidence for petitions.
 - **Mobile first and installable (PWA):** it works at 360px, installs to the home screen, starts offline, and shows how old its data is when the network drops.
 
 All data comes from the **Election Shield USSD service** (`harmanicomputech/claude`), where polling agents submit results by USSD. That service is the source of truth. This app keeps a copy, received two ways (see `docs/WEB-APP-HANDOFF.md`):
@@ -59,6 +60,8 @@ Unsigned or wrongly signed events are refused (401). Until both webhook values a
 | `ELECTION_PRINCIPAL_PARTY` | empty | the party weak links are worked out for (empty = the current leader) |
 | `ELECTION_NEAR_MARGIN` | 5 | "near 25%" means under 30% |
 | `ELECTION_LOW_COVERAGE` | 50 | an LGA with fewer than 50% of PUs reported is a weak link |
+| `ELECTION_DISCREPANCY_VOTES` | 10 | a PU is flagged when any party's IReV figure differs from our EC8A by this many votes |
+| `ELECTION_DISCREPANCY_SHARE_POINTS` | 3 | a ward/LGA collation is flagged when any party's declared share differs from its PVT share by this many percentage points |
 
 Shares are of total valid votes, which includes OTHERS. OTHERS is not a candidate, so it never "leads" or appears in the tracker.
 
@@ -76,7 +79,7 @@ In order of election-day value, per the brief:
 
 1. ~~PVT dashboard with collation and the 25% tracker~~ (done)
 2. ~~PU monitoring board and incident feed with acknowledge/resolve~~ (done). A map needs PU coordinates, which the register doesn't have yet; the board is the list view.
-3. Official results intake (IReV per PU, EC8B/EC8C collations) and comparison against the PVT, with an evidence export.
+3. ~~Official results intake and comparison, with an evidence export~~ (done)
 4. EC8A photo upload, tied to the result reference, with offline queueing.
 5. Web Push for urgent incidents and corrections awaiting review.
 6. Broadcast system (SMS/WhatsApp).

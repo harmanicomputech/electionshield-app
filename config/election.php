@@ -59,6 +59,23 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Official Results Comparison
+    |--------------------------------------------------------------------------
+    |
+    | A PU is flagged when any party's IReV figure differs from our agent's
+    | EC8A by at least discrepancy_votes. A ward or LGA collation is flagged
+    | when any party's declared share of the valid votes differs from its PVT
+    | share by at least discrepancy_share_points percentage points; with full
+    | PVT coverage, a raw vote difference of discrepancy_votes also counts.
+    |
+    */
+
+    'discrepancy_votes' => (int) env('ELECTION_DISCREPANCY_VOTES', 10),
+
+    'discrepancy_share_points' => (float) env('ELECTION_DISCREPANCY_SHARE_POINTS', 3),
+
+    /*
+    |--------------------------------------------------------------------------
     | Set-up
     |--------------------------------------------------------------------------
     |

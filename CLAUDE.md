@@ -19,6 +19,7 @@ The **Election Shield USSD service** (`harmanicomputech/claude`) is the source o
 - `app/Services/UssdSync.php`: read-API pull: cursors, `updated_since` = last `server_time` minus 1 minute, per-resource `sync_states`
 - `app/Services/Collation.php`, `Tally.php`: figures by state/LGA/ward/PU; `SpreadTracker.php`: the 25% rule, the projection and weak links
 - `app/Services/PuMonitor.php`, `PuStatus.php`, `MonitorTally.php`: the PU monitoring board (first check-in, latest materials report by `reported_at`, counted result, unresolved incidents)
+- `app/Services/ResultComparison.php`: PVT vs INEC. PUs vote by vote against `official_results` (IReV), wards/LGAs by share against `official_collations` (EC8B/EC8C). Official figures are entered in `Official*Controller`s and never mixed into PVT totals
 - `app/Http/Controllers/Console/IncidentController.php`: the incident feed; acknowledge / resolve / reopen are safe to repeat (the offline queue replays them) and their columns are never touched by USSD ingest
 - `app/Http/Controllers/Console/`, `resources/views/`: the web console. Users have `role` admin|coordinator; admin-only routes use `RequireAdmin`. The first admin is created at `/login` with ADMIN_PASSWORD as a setup key. Record sensitive actions with `App\Support\Audit::record()`
 - `app/Support/Settings.php`: console settings (the host has no terminal to edit `.env`), including `data_view` (real or rehearsal)
@@ -34,5 +35,7 @@ The **Election Shield USSD service** (`harmanicomputech/claude`) is the source o
 - **Mobile first** (360px) is an acceptance criterion: no horizontal scroll, 44px tap targets, tables use `table.stack` (cards on phones; `td.key` is the card title, `td.detail` sits behind the Details tap). Chart colours follow the party (`App\Support\Party::slot()`), never its rank, and every bar has a direct label.
 - **The service worker caches only the data pages** (`/`, `/spread`, `/collation/*`, `/monitor/*`), network first, and the cache is cleared on logout. Never the incident feed or anything else showing agent phone numbers. Bump `VERSION` in `sw.js` when the shell changes.
 - **Offline actions:** a form with `data-queue="<label>"` is posted in the background and, with no connection, queued in `localStorage` and sent when the connection returns or the app reopens (`public/js/app.js`). Its endpoint must be idempotent and answer JSON when `expectsJson()`.
+- The IReV entry form must not show our PVT figures (so they can't sway what is typed); the comparison appears after saving.
+- PU codes are numeric strings, so PHP turns them into integer array keys; compare with `strval` where it matters.
 - A Blade directive right after a letter (`arrived@if`) is not compiled; leave a space.
 - Tests use parties `APC,PDP,LP,OTHERS` and fake USSD credentials (see `phpunit.xml`); `tests/Concerns/SendsUssdEvents.php` signs webhook deliveries and builds payloads.

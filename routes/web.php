@@ -3,9 +3,13 @@
 use App\Http\Controllers\Console\AuditController;
 use App\Http\Controllers\Console\AuthController;
 use App\Http\Controllers\Console\CollationController;
+use App\Http\Controllers\Console\CompareController;
 use App\Http\Controllers\Console\DashboardController;
 use App\Http\Controllers\Console\IncidentController;
 use App\Http\Controllers\Console\MonitorController;
+use App\Http\Controllers\Console\OfficialCollationController;
+use App\Http\Controllers\Console\OfficialImportController;
+use App\Http\Controllers\Console\OfficialResultController;
 use App\Http\Controllers\Console\SystemController;
 use App\Http\Controllers\Console\UserController;
 use App\Http\Middleware\RequireAdmin;
@@ -34,6 +38,26 @@ Route::middleware('auth')->group(function () {
     Route::post('/incidents/{incident:reference}/acknowledge', [IncidentController::class, 'acknowledge'])->name('incidents.acknowledge');
     Route::post('/incidents/{incident:reference}/resolve', [IncidentController::class, 'resolve'])->name('incidents.resolve');
     Route::post('/incidents/{incident:reference}/reopen', [IncidentController::class, 'reopen'])->name('incidents.reopen');
+
+    // Official results (IReV per PU, declared EC8B/EC8C) and the comparison.
+    Route::get('/compare', [CompareController::class, 'index'])->name('compare');
+    Route::get('/official', [OfficialResultController::class, 'index'])->name('official');
+    Route::get('/official/pu/{code}', [OfficialResultController::class, 'edit'])->name('official.pu');
+    Route::put('/official/pu/{code}', [OfficialResultController::class, 'update'])->name('official.pu.update');
+    Route::get('/official/collations', [OfficialCollationController::class, 'index'])->name('official.collations');
+    Route::get('/official/collations/{level}/{lga}/{ward?}', [OfficialCollationController::class, 'edit'])->name('official.collation');
+    Route::put('/official/collations/{level}/{lga}/{ward?}', [OfficialCollationController::class, 'update'])->name('official.collation.update');
+
+    Route::middleware(RequireAdmin::class)->group(function () {
+        // The export includes agents' phone numbers.
+        Route::get('/compare/export', [CompareController::class, 'export'])->name('compare.export');
+        Route::delete('/official/pu/{code}', [OfficialResultController::class, 'destroy'])->name('official.pu.destroy');
+        Route::get('/official/import', [OfficialImportController::class, 'show'])->name('official.import');
+        Route::post('/official/import', [OfficialImportController::class, 'store'])->name('official.import.store');
+    });
+
+    // After /compare/export so "export" isn't taken for an LGA.
+    Route::get('/compare/{lga}', [CompareController::class, 'lga'])->name('compare.lga');
 
     Route::middleware(RequireAdmin::class)->group(function () {
         Route::get('/system', [SystemController::class, 'show'])->name('system');

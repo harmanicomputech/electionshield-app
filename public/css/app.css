@@ -163,7 +163,13 @@ table.stack a.rowlink { font-weight: 600; text-decoration: none; }
   table.stack .more-btn { display: inline-flex; }
 }
 .more-btn { display: none; min-height: 44px; align-items: center; background: none; border: 0; color: var(--link); font: inherit; font-size: 14px; padding: 0; cursor: pointer; }
-@media (min-width: 768px) { .card.flush { padding: 0; overflow: hidden; } .card.flush h2 { padding: 16px 16px 0; } }
+@media (min-width: 768px) {
+  .card.flush { padding: 0; overflow: hidden; }
+  .card.flush h2 { padding: 16px 16px 0; }
+  .card.flush .table-wrap { margin: 0; }
+  .card.flush > p { padding: 0 16px 16px; }
+  .table-wrap { overflow-x: auto; }
+}
 
 /* Forms and buttons */
 label { display: block; font-size: 14px; color: var(--text-2); margin: 12px 0 4px; }
@@ -240,3 +246,5 @@ textarea { width: 100%; min-height: 72px; padding: 8px 12px; border: 1px solid v
 .queue-state.queued { color: var(--warn); } .queue-state.sent { color: var(--good); } .queue-state.failed { color: var(--bad); }
 .banner.queue { background: var(--warn-bg); color: var(--warn); border-bottom: 1px solid var(--line); }
 a.tel { font-weight: 600; white-space: nowrap; }
+pre { background: var(--surface-2); padding: 10px 12px; border-radius: 8px; overflow-x: auto; max-width: 100%; }
+pre code { background: none; padding: 0; word-break: normal; white-space: pre; }
