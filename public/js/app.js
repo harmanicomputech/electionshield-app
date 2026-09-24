@@ -101,7 +101,7 @@
    * incident) are sent in the background; with no connection the action is
    * stored on this device and sent when the connection returns or the app is
    * opened again. The server treats every action as safe to repeat.
-   * (Read the URL with getAttribute: a field named "action" hides form.action.)
+   * (Read the URL with getAttribute: a field named "action" hides the form's own action property.)
    */
   function readQueue() { return safe(function () { return JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]'); }) || []; }
   function writeQueue(items) { safe(function () { localStorage.setItem(QUEUE_KEY, JSON.stringify(items)); }); showQueue(); }
