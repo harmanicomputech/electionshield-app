@@ -77,7 +77,7 @@
       .catch(showStatus);
   }
 
-  window.addEventListener('online', function () { showStatus(); flushQueue(); refresh(); });
+  window.addEventListener('online', function () { showStatus(); flushQueue(); flushPhotos(); refresh(); });
   window.addEventListener('offline', showStatus);
   document.addEventListener('visibilitychange', function () { if (!document.hidden) { refresh(); } });
   setInterval(refresh, REFRESH_MS);
@@ -108,7 +108,7 @@
   function showQueue(message) {
     var el = document.querySelector('[data-queue-banner]');
     if (!el) { return; }
-    var count = readQueue().length;
+    var count = readQueue().length + queuedPhotos;
     el.textContent = message || (count ? count + ' action' + (count > 1 ? 's' : '') + ' queued: will send when you are back online' : '');
     el.hidden = !el.textContent;
   }
@@ -123,8 +123,8 @@
   }
 
   function setState(form, text, cls) {
-    var item = form.closest('.item');
-    var el = item && item.querySelector('[data-queue-state]');
+    var item = form.closest('.item') || form;
+    var el = item.querySelector('[data-queue-state]');
     if (el) { el.textContent = text; el.className = 'queue-state ' + cls; }
   }
 
@@ -187,7 +187,140 @@
     document.querySelectorAll('[data-js-hide]').forEach(function (el) { el.hidden = true; });
   }
 
-  function bindMain() { bindRows(); bindGuide(); bindQueue(); bindFilters(); }
+  /*
+   * EC8A photo uploads (forms marked data-photo). The photo is shrunk on the
+   * phone (long side 2000px, JPEG) so it goes through on 3G. With no
+   * connection it is kept in IndexedDB and sent when the connection
+   * returns: by the service worker (Background Sync) where supported, and
+   * by this page on load / on reconnect everywhere. The server stores the
+   * same file only once, so both sending it is harmless.
+   */
+  var queuedPhotos = 0;
+  var MAX_SIDE = 2000;
+
+  function idb() {
+    return new Promise(function (resolve, reject) {
+      if (!window.indexedDB) { reject(new Error('no indexedDB')); return; }
+      var request = indexedDB.open('es-queue', 1);
+      request.onupgradeneeded = function () { request.result.createObjectStore('photos', { keyPath: 'id' }); };
+      request.onsuccess = function () { resolve(request.result); };
+      request.onerror = function () { reject(request.error); };
+    });
+  }
+
+  function photoStore(mode, fn) {
+    return idb().then(function (db) {
+      return new Promise(function (resolve, reject) {
+        var tx = db.transaction('photos', mode);
+        var result = fn(tx.objectStore('photos'));
+        tx.oncomplete = function () { resolve(result && 'result' in result ? result.result : undefined); };
+        tx.onerror = function () { reject(tx.error); };
+      });
+    });
+  }
+
+  function countPhotos() {
+    return photoStore('readonly', function (store) { return store.count(); })
+      .then(function (count) { queuedPhotos = count || 0; showQueue(); }, function () {});
+  }
+
+  function shrink(file) {
+    if (!window.createImageBitmap || !file.type || !/^image\//.test(file.type)) { return Promise.resolve(file); }
+    return createImageBitmap(file, { imageOrientation: 'from-image' }).then(function (bitmap) {
+      var scale = Math.min(1, MAX_SIDE / Math.max(bitmap.width, bitmap.height));
+      if (scale === 1 && file.size < 1500000 && file.type === 'image/jpeg') { return file; }
+      var canvas = document.createElement('canvas');
+      canvas.width = Math.round(bitmap.width * scale);
+      canvas.height = Math.round(bitmap.height * scale);
+      canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      return new Promise(function (resolve) {
+        canvas.toBlob(function (blob) { resolve(blob || file); }, 'image/jpeg', 0.85);
+      });
+    }).catch(function () { return file; });
+  }
+
+  function sendPhoto(item) {
+    var data = new FormData();
+    item.fields.forEach(function (pair) { data.append(pair[0], pair[1]); });
+    data.append('photo', item.blob, item.filename);
+    return fetch(item.url, { method: 'POST', credentials: 'same-origin', headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, body: data });
+  }
+
+  function queuePhoto(item) {
+    return photoStore('readwrite', function (store) { store.put(item); }).then(function () {
+      countPhotos();
+      if (navigator.serviceWorker && navigator.serviceWorker.ready) {
+        navigator.serviceWorker.ready.then(function (reg) { if (reg.sync) { return reg.sync.register('es-photos'); } }).catch(function () {});
+      }
+    });
+  }
+
+  var sendingPhotos = false;
+  function flushPhotos() {
+    if (sendingPhotos || !navigator.onLine) { return; }
+    sendingPhotos = true;
+    photoStore('readonly', function (store) { return store.getAll(); }).then(function (items) {
+      return (items || []).reduce(function (chain, item) {
+        return chain.then(function () {
+          return sendPhoto(item).then(function (response) {
+            if (response.status >= 500) { throw new Error('server'); }
+            if (!response.ok) { showQueue('Could not send the photo for ' + item.label + ' (' + response.status + ').'); }
+            return photoStore('readwrite', function (store) { store.delete(item.id); });
+          });
+        });
+      }, Promise.resolve());
+    }).catch(function () {}).then(function () { sendingPhotos = false; countPhotos(); });
+  }
+
+  function bindPhotos() {
+    document.querySelectorAll('form[data-photo]').forEach(function (form) {
+      form.addEventListener('submit', function (event) {
+        var input = form.querySelector('input[type=file]');
+        var file = input && input.files && input.files[0];
+        if (!file || !window.fetch || !window.FormData) { return; } // plain form post
+        event.preventDefault();
+
+        var button = form.querySelector('button[type=submit]');
+        if (button) { button.disabled = true; }
+        setState(form, 'Preparing photo…', 'queued');
+
+        shrink(file).then(function (blob) {
+          var fields = [];
+          new FormData(form).forEach(function (value, key) { if (key !== 'photo') { fields.push([key, value]); } });
+          var item = { id: Date.now() + '-' + Math.random().toString(36).slice(2), url: form.action, fields: fields, blob: blob, filename: (file.name || 'ec8a').replace(/\.[^.]+$/, '') + '.jpg', label: form.getAttribute('data-photo') };
+
+          var keep = function () {
+            return queuePhoto(item).then(function () {
+              setState(form, 'Saved on this phone: it will be sent when the network returns', 'queued');
+            }, function () {
+              setState(form, 'No connection, and this browser cannot keep the photo. Try again with signal.', 'failed');
+              if (button) { button.disabled = false; }
+            });
+          };
+
+          if (!navigator.onLine) { return keep(); }
+
+          setState(form, 'Sending…', 'queued');
+          return sendPhoto(item).then(function (response) {
+            if (response.status >= 500) { return keep(); }
+            return response.json().catch(function () { return {}; }).then(function (body) {
+              if (response.ok) {
+                setState(form, 'Photo sent ✓', 'sent');
+                form.reset();
+                if (body.url && !form.hasAttribute('data-stay')) { setTimeout(function () { location.href = body.url; }, 700); }
+              } else {
+                var errors = body.errors ? Object.keys(body.errors).map(function (k) { return body.errors[k][0]; }).join(' ') : (body.message || 'Could not send (' + response.status + ')');
+                setState(form, errors, 'failed');
+              }
+              if (button) { button.disabled = false; }
+            });
+          }, keep);
+        });
+      });
+    });
+  }
+
+  function bindMain() { bindRows(); bindGuide(); bindQueue(); bindFilters(); bindPhotos(); }
 
   // Install: Android/desktop Chrome prompt, and a Home Screen guide on iPhone.
   var deferred = null;
@@ -226,4 +359,6 @@
   bindMain();
   showQueue();
   flushQueue();
+  countPhotos();
+  flushPhotos();
 })();

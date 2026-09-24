@@ -49,6 +49,21 @@
     </section>
 @endif
 
+@php($pvtResult = $comparison['pvt'] ?? \App\Models\Result::query()->counted(\App\Support\Settings::showingRehearsal())->where('polling_unit_code', $unit->code)->first())
+@if ($official && $pvtResult)
+    @php($shots = \App\Models\Ec8aPhoto::query()->where('result_reference', $pvtResult->reference)->get())
+    @if ($shots->isNotEmpty())
+        <section class="card">
+            <h2>EC8A photos from our agent</h2>
+            <ul class="photo-grid">
+                @foreach ($shots as $shot)
+                    <li class="item"><a class="thumb" href="{{ route('photos.show', $shot) }}"><img src="{{ route('photos.image', [$shot, 'thumb']) }}" alt="EC8A photo" loading="lazy"></a><span class="badge">{{ $shot->reviewLabel() }}</span></li>
+                @endforeach
+            </ul>
+        </section>
+    @endif
+@endif
+
 <section class="card">
     <h2>{{ $official ? 'IReV result' : 'Enter the IReV result' }}</h2>
     @if ($official)<p class="small muted">Last saved by {{ $official->entered_by }}, {{ \App\Support\Time::local($official->updated_at, 'j M, g:i A') }} ({{ $official->source }}).</p>@endif

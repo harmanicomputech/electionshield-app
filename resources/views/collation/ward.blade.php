@@ -3,6 +3,7 @@
 @section('title', $ward)
 
 @php($parties = \App\Services\Collation::parties())
+@php($photos = \App\Models\Ec8aPhoto::query()->whereIn('result_reference', collect($units)->pluck('result.reference')->filter())->get()->groupBy('result_reference'))
 
 @section('content')
 <div class="page-head">
@@ -38,6 +39,12 @@
                             @if ($result)
                                 <span class="badge good">✓ {{ $result->reference }}</span>
                                 <span class="muted small">{{ \App\Support\Time::local($result->submitted_at) }}</span>
+                                @php($shots = $photos->get($result->reference))
+                                @if ($shots)
+                                    <a class="badge {{ $shots->contains('review_status', 'mismatch') ? 'bad' : '' }}" href="{{ route('photos.show', $shots->first()) }}">📷 {{ $shots->count() }} EC8A</a>
+                                @else
+                                    <a class="badge" href="{{ route('photos', ['reference' => $result->reference]) }}">Add EC8A photo</a>
+                                @endif
                             @else
                                 <span class="badge warn">Not reported</span>
                             @endif

@@ -5,8 +5,10 @@
  *   to the last copy seen; the page itself shows how old its data is.
  * - Nothing else is cached (login, admin pages, anything with phone numbers).
  * - The page cache is cleared on logout.
+ * - EC8A photos taken offline wait in IndexedDB ('es-queue' → 'photos',
+ *   written by app.js) and are sent on the 'es-photos' Background Sync.
  */
-const VERSION = 'v2';
+const VERSION = 'v3';
 const SHELL = `es-shell-${VERSION}`;
 const PAGES = 'es-pages';
 const SHELL_FILES = [
@@ -92,4 +94,48 @@ async function shell(request) {
     cache.put(request, response.clone());
   }
   return response;
+}
+
+self.addEventListener('sync', (event) => {
+  if (event.tag === 'es-photos') {
+    event.waitUntil(sendQueuedPhotos());
+  }
+});
+
+function queueDb() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open('es-queue', 1);
+    request.onupgradeneeded = () => request.result.createObjectStore('photos', { keyPath: 'id' });
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+function onStore(db, mode, fn) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('photos', mode);
+    const request = fn(tx.objectStore('photos'));
+    tx.oncomplete = () => resolve(request ? request.result : undefined);
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+// A server error or no connection throws, so the browser retries the sync later.
+async function sendQueuedPhotos() {
+  const db = await queueDb();
+  const items = await onStore(db, 'readonly', (store) => store.getAll());
+
+  for (const item of items || []) {
+    const data = new FormData();
+    item.fields.forEach(([key, value]) => data.append(key, value));
+    data.append('photo', item.blob, item.filename);
+
+    const response = await fetch(item.url, { method: 'POST', credentials: 'same-origin', headers: { Accept: 'application/json' }, body: data });
+
+    if (response.status >= 500) {
+      throw new Error('Server error; retry later');
+    }
+
+    await onStore(db, 'readwrite', (store) => store.delete(item.id));
+  }
 }

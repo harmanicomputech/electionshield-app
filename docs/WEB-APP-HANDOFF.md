@@ -210,3 +210,14 @@ Most coordinators and field supervisors will use phones, often on weak networks.
   5. Broadcast system
   6. Digital town hall
 - **The EC8A photo:** USSD can't send images. A web or WhatsApp upload flow tied to the result reference would let coordinators check figures against the photographed result sheet.
+
+## EC8A photo upload links (built in the web app)
+
+The web app accepts EC8A photos for a result reference at a no-login link, so the agent who holds the sheet can send it. The USSD service can build the link itself and add it to the agent's SMS receipt:
+
+```
+{WEB_APP_URL}/u/{reference}/{token}
+token = first 20 hex characters of HMAC-SHA256("ec8a:" + reference, DASHBOARD_WEBHOOK_SECRET)
+```
+
+In PHP: `substr(hash_hmac('sha256', 'ec8a:'.$reference, config('services.dashboard.secret')), 0, 20)`. The link works even before the result has reached the web app, accepts up to 6 photos per result, and shows the agent nothing but the PU name.

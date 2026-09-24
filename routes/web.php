@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AgentUploadController;
 use App\Http\Controllers\Console\AuditController;
 use App\Http\Controllers\Console\AuthController;
 use App\Http\Controllers\Console\CollationController;
@@ -10,6 +11,7 @@ use App\Http\Controllers\Console\MonitorController;
 use App\Http\Controllers\Console\OfficialCollationController;
 use App\Http\Controllers\Console\OfficialImportController;
 use App\Http\Controllers\Console\OfficialResultController;
+use App\Http\Controllers\Console\PhotoController;
 use App\Http\Controllers\Console\SystemController;
 use App\Http\Controllers\Console\UserController;
 use App\Http\Middleware\RequireAdmin;
@@ -21,6 +23,10 @@ Route::post('/setup', [AuthController::class, 'setup'])->middleware('throttle:5,
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 Route::view('/offline', 'offline')->name('offline');
+
+// Agents' no-login EC8A upload link (the token is the authorisation, see UploadLink).
+Route::get('/u/{reference}/{token}', [AgentUploadController::class, 'show'])->middleware('throttle:30,1')->name('upload.agent');
+Route::post('/u/{reference}/{token}', [AgentUploadController::class, 'store'])->middleware('throttle:10,1')->name('upload.agent.store');
 
 Route::middleware('auth')->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
@@ -39,6 +45,12 @@ Route::middleware('auth')->group(function () {
     Route::post('/incidents/{incident:reference}/resolve', [IncidentController::class, 'resolve'])->name('incidents.resolve');
     Route::post('/incidents/{incident:reference}/reopen', [IncidentController::class, 'reopen'])->name('incidents.reopen');
 
+    Route::get('/photos', [PhotoController::class, 'index'])->name('photos');
+    Route::post('/photos', [PhotoController::class, 'store'])->middleware('throttle:30,1')->name('photos.store');
+    Route::get('/photos/{photo}', [PhotoController::class, 'show'])->name('photos.show');
+    Route::get('/photos/{photo}/image/{size?}', [PhotoController::class, 'image'])->whereIn('size', ['thumb'])->name('photos.image');
+    Route::post('/photos/{photo}/review', [PhotoController::class, 'review'])->name('photos.review');
+
     // Official results (IReV per PU, declared EC8B/EC8C) and the comparison.
     Route::get('/compare', [CompareController::class, 'index'])->name('compare');
     Route::get('/official', [OfficialResultController::class, 'index'])->name('official');
@@ -51,6 +63,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware(RequireAdmin::class)->group(function () {
         // The export includes agents' phone numbers.
         Route::get('/compare/export', [CompareController::class, 'export'])->name('compare.export');
+        Route::delete('/photos/{photo}', [PhotoController::class, 'destroy'])->name('photos.destroy');
         Route::delete('/official/pu/{code}', [OfficialResultController::class, 'destroy'])->name('official.pu.destroy');
         Route::get('/official/import', [OfficialImportController::class, 'show'])->name('official.import');
         Route::post('/official/import', [OfficialImportController::class, 'store'])->name('official.import.store');

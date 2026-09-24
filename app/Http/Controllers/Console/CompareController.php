@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Console;
 
 use App\Http\Controllers\Controller;
+use App\Models\Ec8aPhoto;
 use App\Models\OfficialCollation;
 use App\Services\Collation;
 use App\Services\ResultComparison;
@@ -62,7 +63,9 @@ class CompareController extends Controller
 
         Audit::record('compare.export', 'Exported '.$rows->count().' PU comparisons'.($request->query('lga') ? " for {$request->query('lga')}" : ''));
 
-        return response()->streamDownload(function () use ($rows, $parties) {
+        $photos = Ec8aPhoto::query()->whereIn('result_reference', $rows->pluck('pvt.reference')->filter())->get()->groupBy('result_reference');
+
+        return response()->streamDownload(function () use ($rows, $parties, $photos) {
             $out = fopen('php://output', 'w');
             fputcsv($out, [
                 'lga', 'ward', 'pu_code', 'inec_code', 'pu_name', 'registered_voters', 'flags',
@@ -70,6 +73,7 @@ class CompareController extends Controller
                 ...array_map(fn ($party) => "pvt_{$party}", $parties), 'pvt_accredited', 'pvt_rejected',
                 'irev_status', ...array_map(fn ($party) => "irev_{$party}", $parties), 'irev_accredited', 'irev_rejected', 'irev_entered_by',
                 ...array_map(fn ($party) => "diff_{$party}", $parties),
+                'ec8a_photos', 'ec8a_photo_review', 'ec8a_photo_sha256',
             ], escape: '\\');
 
             foreach ($rows as $row) {
@@ -77,6 +81,7 @@ class CompareController extends Controller
                 $official = $row['official'];
                 $pvtVotes = $pvt?->votesByParty() ?? [];
                 $officialVotes = $official?->uploaded() ? $official->votesByParty() : [];
+                $shots = $pvt ? ($photos[$pvt->reference] ?? collect()) : collect();
 
                 fputcsv($out, [
                     $row['lga'], $row['ward'], $row['code'], $row['unit']?->inecCode() ?? $row['code'], $row['unit']?->name, $row['unit']?->registered_voters,
@@ -86,6 +91,9 @@ class CompareController extends Controller
                     $official?->irev_status,
                     ...array_map(fn ($party) => $officialVotes === [] ? null : $officialVotes[$party], $parties), $official?->accredited_voters, $official?->rejected_votes, $official?->entered_by,
                     ...array_map(fn ($party) => $row['diff'][$party] ?? null, $parties),
+                    $shots->count() ?: null,
+                    $shots->pluck('review_status')->unique()->implode(' ') ?: null,
+                    $shots->pluck('sha256')->implode(' ') ?: null,
                 ], escape: '\\');
             }
 

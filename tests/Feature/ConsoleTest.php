@@ -154,6 +154,16 @@ class ConsoleTest extends TestCase
         $this->assertTrue(AuditLog::where('action', 'system.migrate')->exists());
     }
 
+    public function test_no_blade_directive_is_glued_to_a_word(): void
+    {
+        // Blade skips "@if" right after a letter or digit (it looks like an
+        // email address), leaving an unmatched @endif that breaks the page.
+        foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator(resource_path('views'), \FilesystemIterator::SKIP_DOTS)) as $file) {
+            preg_match_all('/[A-Za-z0-9]@(if|else|endif|foreach|endforeach|isset|endisset|unless|endunless)\b/', file_get_contents($file->getPathname()), $matches);
+            $this->assertSame([], $matches[0], $file->getPathname());
+        }
+    }
+
     public function test_the_pwa_files_are_served(): void
     {
         $manifest = json_decode(file_get_contents(public_path('manifest.webmanifest')), true);

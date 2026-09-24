@@ -75,6 +75,10 @@ Under **Users**, give each coordinator their own account. Admins manage users an
 
 On phones: open the site in Chrome and press **Install app** (Android), or in Safari tap Share → **Add to Home Screen** (iPhone).
 
+## EC8A photos and disk space
+
+Photos are stored in `election-shield-web/storage/app/private/ec8a/`, outside the web root, and are shown only to logged-in users. Each is about 100–500 KB after the phone shrinks it, so photos of all 3,308 PUs need roughly 1–2 GB. Check your hosting plan's disk quota before election day, and back up that folder with the database afterwards, as it is evidence.
+
 ## Rehearsals
 
 Results sent while the USSD service is in rehearsal mode are marked as rehearsal. Under **System → Data shown**, switch to **rehearsal data** during the practice and back to **real results** afterwards. Real and rehearsal figures are never added together.
