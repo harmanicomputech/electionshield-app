@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\MessagingCallbackController;
 use App\Http\Controllers\Api\UssdEventController;
 use App\Http\Middleware\VerifyUssdWebhook;
 use Illuminate\Support\Facades\Route;
@@ -8,3 +9,9 @@ use Illuminate\Support\Facades\Route;
 Route::post('/ussd-events', UssdEventController::class)
     ->middleware(VerifyUssdWebhook::class)
     ->name('ussd-events');
+
+// Messaging provider callbacks (see MessagingCallbackController).
+Route::post('/sms/delivery/{secret}', [MessagingCallbackController::class, 'smsDelivery'])->name('sms.delivery');
+Route::post('/sms/opt-out/{secret}', [MessagingCallbackController::class, 'smsOptOut'])->name('sms.opt-out');
+Route::get('/whatsapp', [MessagingCallbackController::class, 'whatsappVerify'])->name('whatsapp.verify');
+Route::post('/whatsapp', [MessagingCallbackController::class, 'whatsapp'])->name('whatsapp.webhook');

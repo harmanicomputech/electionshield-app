@@ -112,6 +112,7 @@ main.wrap { padding-bottom: calc(var(--tab-h) + 24px + env(safe-area-inset-botto
 .stat span { color: var(--text-2); font-size: 13px; }
 .grid { display: grid; gap: 16px; }
 .grid > .card { margin-bottom: 0; }
+.grid > *, .filters > * { min-width: 0; }
 @media (min-width: 768px) { .stats { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 @media (min-width: 1024px) { .grid.two { grid-template-columns: 1fr 1fr; } }
 
@@ -261,3 +262,4 @@ table.compact th, table.compact td { padding: 8px 6px; border-bottom: 1px solid 
 table.compact th { font-size: 13px; color: var(--text-2); font-weight: 600; }
 table.compact .num { text-align: right; }
 input[type=file]::file-selector-button { min-height: 44px; padding: 0 16px; margin-right: 12px; border-radius: 8px; border: 1px solid var(--brand); background: var(--surface); color: var(--link); font: inherit; font-weight: 600; cursor: pointer; }
+.button:disabled, button:disabled { opacity: .45; cursor: not-allowed; }

@@ -3,8 +3,10 @@
 use App\Http\Controllers\AgentUploadController;
 use App\Http\Controllers\Console\AuditController;
 use App\Http\Controllers\Console\AuthController;
+use App\Http\Controllers\Console\BroadcastController;
 use App\Http\Controllers\Console\CollationController;
 use App\Http\Controllers\Console\CompareController;
+use App\Http\Controllers\Console\ContactController;
 use App\Http\Controllers\Console\DashboardController;
 use App\Http\Controllers\Console\IncidentController;
 use App\Http\Controllers\Console\MonitorController;
@@ -15,6 +17,7 @@ use App\Http\Controllers\Console\PhotoController;
 use App\Http\Controllers\Console\PushController;
 use App\Http\Controllers\Console\SystemController;
 use App\Http\Controllers\Console\UserController;
+use App\Http\Controllers\JoinController;
 use App\Http\Middleware\RequireAdmin;
 use Illuminate\Support\Facades\Route;
 
@@ -24,6 +27,10 @@ Route::post('/setup', [AuthController::class, 'setup'])->middleware('throttle:5,
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 Route::view('/offline', 'offline')->name('offline');
+
+// Public sign-up for election updates (the broadcast opt-in).
+Route::get('/join', [JoinController::class, 'show'])->name('join');
+Route::post('/join', [JoinController::class, 'store'])->middleware('throttle:5,1')->name('join.store');
 
 // Agents' no-login EC8A upload link (the token is the authorisation, see UploadLink).
 Route::get('/u/{reference}/{token}', [AgentUploadController::class, 'show'])->middleware('throttle:30,1')->name('upload.agent');
@@ -92,5 +99,22 @@ Route::middleware('auth')->group(function () {
         Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
 
         Route::get('/audit', [AuditController::class, 'index'])->name('audit');
+
+        Route::get('/broadcasts', [BroadcastController::class, 'index'])->name('broadcasts');
+        Route::get('/broadcasts/create', [BroadcastController::class, 'create'])->name('broadcasts.create');
+        Route::post('/broadcasts', [BroadcastController::class, 'store'])->name('broadcasts.store');
+        Route::get('/broadcasts/{broadcast}', [BroadcastController::class, 'show'])->name('broadcasts.show');
+        Route::get('/broadcasts/{broadcast}/edit', [BroadcastController::class, 'edit'])->name('broadcasts.edit');
+        Route::put('/broadcasts/{broadcast}', [BroadcastController::class, 'update'])->name('broadcasts.update');
+        Route::post('/broadcasts/{broadcast}/send', [BroadcastController::class, 'send'])->name('broadcasts.send');
+        Route::post('/broadcasts/{broadcast}/schedule', [BroadcastController::class, 'schedule'])->name('broadcasts.schedule');
+        Route::post('/broadcasts/{broadcast}/cancel', [BroadcastController::class, 'cancel'])->name('broadcasts.cancel');
+        Route::post('/broadcasts/{broadcast}/test', [BroadcastController::class, 'test'])->middleware('throttle:10,1')->name('broadcasts.test');
+
+        Route::get('/contacts', [ContactController::class, 'index'])->name('contacts');
+        Route::post('/contacts', [ContactController::class, 'store'])->name('contacts.store');
+        Route::post('/contacts/import', [ContactController::class, 'import'])->name('contacts.import');
+        Route::post('/contacts/opt-out', [ContactController::class, 'optOut'])->name('contacts.opt-out');
+        Route::delete('/contacts/{contact}', [ContactController::class, 'destroy'])->name('contacts.destroy');
     });
 });

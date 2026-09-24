@@ -417,7 +417,43 @@
     });
   }
 
-  function bindMain() { bindRows(); bindGuide(); bindQueue(); bindFilters(); bindPhotos(); bindPush(); }
+  // Broadcast form: SMS part counter (same rules as BroadcastController::segments)
+  // and switching between the SMS and WhatsApp fields.
+  var GSM = '@£$¥èéùìòÇ\nØø\rÅåΔ_ΦΓΛΩΠΨΣΘΞÆæßÉ !"#¤%&\'()*+,-./0123456789:;<=>?¡ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÑÜ§¿abcdefghijklmnopqrstuvwxyzäöñüà^{}\\[~]|€';
+
+  function smsParts(text) {
+    var chars = Array.from(text);
+    var unicode = chars.some(function (c) { return GSM.indexOf(c) === -1; });
+    var length = unicode ? chars.length : chars.reduce(function (n, c) { return n + ('^{}\\[~]|€'.indexOf(c) === -1 ? 1 : 2); }, 0);
+    var single = unicode ? 70 : 160, multi = unicode ? 67 : 153;
+    return { length: length, parts: length === 0 ? 0 : (length <= single ? 1 : Math.ceil(length / multi)), unicode: unicode };
+  }
+
+  function bindBroadcastForm() {
+    var box = document.querySelector('[data-sms-counter]');
+    var out = document.querySelector('[data-sms-count]');
+    if (box && out) {
+      var update = function () {
+        var p = smsParts(box.value);
+        out.textContent = p.length + ' characters · ' + p.parts + ' SMS part' + (p.parts === 1 ? '' : 's') + (p.unicode ? ' (Unicode: emoji or special characters)' : '');
+      };
+      box.addEventListener('input', update);
+      update();
+    }
+
+    var radios = document.querySelectorAll('[data-channel]');
+    radios.forEach(function (radio) {
+      radio.addEventListener('change', function () {
+        document.querySelectorAll('[data-channel-section]').forEach(function (section) {
+          var on = section.getAttribute('data-channel-section') === radio.value;
+          section.hidden = !on;
+          section.querySelectorAll('textarea[name=message]').forEach(function (t) { t.disabled = !on; });
+        });
+      });
+    });
+  }
+
+  function bindMain() { bindRows(); bindGuide(); bindQueue(); bindFilters(); bindPhotos(); bindPush(); bindBroadcastForm(); }
 
   // Install: Android/desktop Chrome prompt, and a Home Screen guide on iPhone.
   var deferred = null;

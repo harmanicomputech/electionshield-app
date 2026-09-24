@@ -50,6 +50,8 @@ $UPDATE || php -r '
         "ADMIN_PASSWORD" => $random(12),
         "USSD_WEBHOOK_TOKEN" => $random(24),
         "USSD_WEBHOOK_SECRET" => $random(32),
+        "SMS_CALLBACK_SECRET" => $random(20),
+        "WHATSAPP_VERIFY_TOKEN" => $random(16),
     ];
     foreach ($values as $key => $value) {
         $env = str_replace("{{".$key."}}", $value, $env);

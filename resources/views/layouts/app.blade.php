@@ -42,6 +42,7 @@
                         <a href="{{ route('system') }}" class="{{ $active('system') }}">System</a>
                         <a href="{{ route('users') }}" class="{{ $active('users') }}">Users</a>
                         <a href="{{ route('audit') }}" class="{{ $active('audit') }}">Audit log</a>
+                        <a href="{{ route('broadcasts') }}" class="{{ $active(['broadcasts', 'broadcasts.*', 'contacts']) }}">Broadcasts</a>
                     @endif
                     <span class="spacer"></span>
                     <a href="{{ route('push') }}" class="{{ $active('push') }}">Notifications</a>
@@ -95,6 +96,7 @@
                         <a href="{{ route('system') }}">System &amp; sync</a>
                         <a href="{{ route('users') }}">Users</a>
                         <a href="{{ route('audit') }}">Audit log</a>
+                        <a href="{{ route('broadcasts') }}">Broadcasts</a>
                         <hr>
                     @endif
                     <a href="{{ route('push') }}">Notifications</a>

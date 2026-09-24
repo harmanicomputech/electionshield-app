@@ -73,7 +73,20 @@ Use the real path shown in File Manager and your host's PHP 8.3+ binary. Within 
 
 On the **System** page, press **Set up notifications** once. Then each coordinator opens **More → Notifications** on their phone and presses **Turn on notifications**. On iPhone, add the app to the Home Screen first (iOS 16.4 or later). Set `VAPID_SUBJECT` in `.env` to a contact email, as `mailto:you@example.com`.
 
-## 8. Add your team
+## 8. Broadcasts (SMS and WhatsApp)
+
+**SMS.** Put the Africa's Talking username, API key and (if you have one) approved sender ID in `.env`. Then, in the Africa's Talking dashboard (SMS → Callback URLs), set:
+
+- **Delivery reports:** `https://shield.yourdomain.com/api/sms/delivery/<SMS_CALLBACK_SECRET>`
+- **Bulk SMS opt-out:** `https://shield.yourdomain.com/api/sms/opt-out/<SMS_CALLBACK_SECRET>`
+
+Nigerian networks block promotional SMS to numbers on the do-not-disturb (DND) list unless the sender ID is registered for it. Ask Africa's Talking about a registered or transactional sender ID before election week.
+
+**WhatsApp** (optional) needs a verified business on the WhatsApp Business Platform and templates approved in WhatsApp Manager. Put the phone number ID, a permanent access token and the app secret in `.env`. In the Meta app, set the webhook to `https://shield.yourdomain.com/api/whatsapp`, with `WHATSAPP_VERIFY_TOKEN` as the verify token, and subscribe to **messages**.
+
+**Who gets what:** supporters receive broadcasts only if they opted in (the public sign-up page `/join`, or an import marked "yes"). Agents and coordinators get operational SMS. Anyone who replies STOP is never messaged again on that channel. Batches are sent by the scheduler cron, about 100 numbers per request.
+
+## 9. Add your team
 
 Under **Users**, give each coordinator their own account. Admins manage users and the connection; coordinators see the dashboards. Every login and change is in the **Audit log**.
 

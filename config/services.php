@@ -59,4 +59,22 @@ return [
         'subject' => env('VAPID_SUBJECT'),
     ],
 
+    // Bulk SMS (same account as the USSD service). Delivery reports and
+    // opt-outs come back to /api/sms/{delivery|opt-out}/{callback_secret}.
+    'africastalking' => [
+        'username' => env('AFRICASTALKING_USERNAME', 'sandbox'),
+        'api_key' => env('AFRICASTALKING_API_KEY'),
+        'sender_id' => env('AFRICASTALKING_SENDER_ID'),
+        'callback_secret' => env('SMS_CALLBACK_SECRET'),
+    ],
+
+    // WhatsApp Business Platform (Meta Cloud API): approved templates only.
+    'whatsapp' => [
+        'phone_number_id' => env('WHATSAPP_PHONE_NUMBER_ID'),
+        'token' => env('WHATSAPP_TOKEN'),
+        'app_secret' => env('WHATSAPP_APP_SECRET'),
+        'verify_token' => env('WHATSAPP_VERIFY_TOKEN'),
+        'api_version' => env('WHATSAPP_API_VERSION', 'v21.0'),
+    ],
+
 ];
