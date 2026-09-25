@@ -2,7 +2,7 @@
 
 Where the project stands and what comes next. Update it whenever something is finished.
 
-Last updated: 25 September 2026.
+Last updated: 25 September 2026 (PU register added).
 
 ## Built so far
 
@@ -18,12 +18,13 @@ All seven features in the brief (`docs/WEB-APP-HANDOFF.md`) are built and tested
 | 5 | Web Push alerts for urgent incidents and corrections | `claude/web-push` | More → Notifications |
 | 6 | SMS/WhatsApp broadcasts with consent, opt-outs and delivery reports; public sign-up | `claude/broadcasts` | More → Broadcasts, `/join` |
 | 7 | Digital town hall: stream, moderated questions, presenter view, SMS reminder | `claude/town-hall` | `/townhall`, More → Town hall |
+| 8 | The PU register built in (3,308 PUs, 13 LGAs, 169 wards), loaded at first-admin setup; re-import or upload a newer CSV on the System page, or run `artisan pu:import`. Desktop navigation tidied into a More menu | `claude/pu-register` | System → Polling unit register |
 
-Branches 2–7 are **stacked**: each is built on the one before, so `claude/town-hall` contains everything. None of them is merged into `main` yet.
+Branches 2–8 are **stacked**: each is built on the one before, so `claude/pu-register` contains everything. None of them is merged into `main` yet.
 
 ## Taking it to the server (first deployment)
 
-The upload package is built from `claude/town-hall` with `scripts/build-shared-hosting.sh`. The full steps are in `docs/DEPLOY-SHARED-HOSTING.md`; this is the short checklist.
+The upload package is built from `claude/pu-register` with `scripts/build-shared-hosting.sh`. The full steps are in `docs/DEPLOY-SHARED-HOSTING.md`; this is the short checklist.
 
 - [ ] 1. In DirectAdmin, create a subdomain, e.g. `shield.techatronagency.com`, and turn on SSL (Let's Encrypt).
 - [ ] 2. Choose PHP 8.3 or 8.4 for it.
@@ -33,7 +34,7 @@ The upload package is built from `claude/town-hall` with `scripts/build-shared-h
 - [ ] 6. Open `https://shield.techatronagency.com/login` and create the first admin, using `ADMIN_PASSWORD` from `.env` as the setup key.
 - [ ] 7. In the USSD server's `election-shield/.env`, set `DASHBOARD_WEBHOOK_URL=https://shield.techatronagency.com/api/ussd-events`, and set `DASHBOARD_API_TOKEN` and `DASHBOARD_WEBHOOK_SECRET` to `USSD_WEBHOOK_TOKEN` and `USSD_WEBHOOK_SECRET` from this app's `.env`.
 - [ ] 8. Add the cron job (every minute): `/usr/local/bin/php /home/USER/domains/shield.techatronagency.com/election-shield-web/artisan schedule:run >> /dev/null 2>&1`
-- [ ] 9. On the System page, press **Full import**, then check that the polling-unit count reads 3,308.
+- [ ] 9. On the System page, check that the **Polling unit register** card reads 3,308 polling units in 13 LGAs and 169 wards (loaded at step 6). Then press **Full import** to bring in the agents and anything already submitted.
 - [ ] 10. In the USSD console, press **Settings → Send all existing data to the dashboard**, then check that System → **Last event** shows it.
 - [ ] 11. On the System page, check that **Scheduler cron** reads "Running" (it can take up to 2 minutes).
 - [ ] 12. On the System page, press **Set up notifications**, then turn them on for your phone under More → Notifications and press **Send a test**.
@@ -58,6 +59,8 @@ Record any problem found here under "Issues from deployment", with the page and 
 7. **GitHub Actions:** CI can't run until the GitHub account's billing lock is cleared.
 
 ## Decisions still open
+
+- **Check the register data.** The bundled CSV (the same file as the USSD service's) totals 4,592,490 registered voters, about three times INEC's 2023 figure for Ebonyi (about 1.6 million), and its PU names look generic ("Open Space 001"). Turnout is worked out from these figures. If it is a placeholder, replace it with INEC's register on the System page (and in the USSD service); if not, confirm it.
 
 - Two-thirds of 13 LGAs is taken as 9 (`ELECTION_SPREAD_LGAS_REQUIRED`). Confirm this with the legal team.
 - `ELECTION_PRINCIPAL_PARTY`, the party weak links are worked out for, is empty (so it follows the leader).

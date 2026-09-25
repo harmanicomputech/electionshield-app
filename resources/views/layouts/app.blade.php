@@ -38,17 +38,23 @@
                     @foreach ($tabs as [$name, $label, $path, $covers])
                         <a href="{{ route($name) }}" class="{{ $active($covers) }}" data-live-id="top-{{ $name }}">{{ $label }}@if ($name === 'incidents' && $urgentOpen)<span class="count" aria-label="{{ $urgentOpen }} urgent open">{{ $urgentOpen }}</span>@endif</a>
                     @endforeach
-                    @if ($user->isAdmin())
-                        <a href="{{ route('system') }}" class="{{ $active('system') }}">System</a>
-                        <a href="{{ route('users') }}" class="{{ $active('users') }}">Users</a>
-                        <a href="{{ route('audit') }}" class="{{ $active('audit') }}">Audit log</a>
-                        <a href="{{ route('broadcasts') }}" class="{{ $active(['broadcasts', 'broadcasts.*', 'contacts']) }}">Broadcasts</a>
-                    @endif
                     <a href="{{ route('townhall.manage') }}" class="{{ $active(['townhall.manage', 'townhall.moderate', 'townhall.create', 'townhall.edit']) }}">Town hall</a>
                     <span class="spacer"></span>
-                    <a href="{{ route('push') }}" class="{{ $active('push') }}">Notifications</a>
-                    <button type="button" data-install hidden>Install app</button>
-                    <form method="post" action="{{ route('logout') }}" data-logout>@csrf<input type="hidden" name="push_endpoint" data-push-endpoint><button type="submit">Log out</button></form>
+                    <details class="top-more">
+                        <summary>More ▾</summary>
+                        <div class="menu">
+                            @if ($user->isAdmin())
+                                <a href="{{ route('system') }}">System &amp; sync</a>
+                                <a href="{{ route('users') }}">Users</a>
+                                <a href="{{ route('audit') }}">Audit log</a>
+                                <a href="{{ route('broadcasts') }}">Broadcasts</a>
+                                <hr>
+                            @endif
+                            <a href="{{ route('push') }}">Notifications</a>
+                            <button type="button" data-install hidden>Install app</button>
+                            <form method="post" action="{{ route('logout') }}" data-logout>@csrf<input type="hidden" name="push_endpoint" data-push-endpoint><button type="submit">Log out ({{ $user->name }})</button></form>
+                        </div>
+                    </details>
                 </nav>
             @endif
         </div>

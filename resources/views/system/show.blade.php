@@ -96,6 +96,18 @@
     </section>
 
     <section class="card">
+        <h2>Polling unit register</h2>
+        <p class="small">{{ number_format($register['units']) }} polling units in {{ $register['lgas'] }} LGAs and {{ number_format($register['wards']) }} wards · {{ number_format($register['registered']) }} registered voters.</p>
+        <form method="post" action="{{ route('system.polling-units') }}" enctype="multipart/form-data">
+            @csrf
+            <label for="pu-file">Newer register (optional CSV: code,name,ward,lga,registered_voters)</label>
+            <input id="pu-file" type="file" name="file" accept=".csv,text/csv">
+            <p class="small muted">With no file, the bundled Ebonyi register (3,308 PUs) is loaded. Existing PUs are updated by code; nothing is deleted.</p>
+            <button class="button secondary" type="submit">Import polling units</button>
+        </form>
+    </section>
+
+    <section class="card">
         <h2>Notifications (Web Push)</h2>
         @if ($pushConfigured)
             <p class="small"><span class="badge good">✓ Set up</span> {{ $pushDevices }} device{{ $pushDevices === 1 ? '' : 's' }} opted in. Each person turns them on under More → Notifications.</p>

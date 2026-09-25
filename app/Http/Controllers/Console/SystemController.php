@@ -9,6 +9,7 @@ use App\Models\PushSubscription;
 use App\Models\Result;
 use App\Models\SyncState;
 use App\Models\WebhookEvent;
+use App\Services\PollingUnitImporter;
 use App\Services\PushNotifier;
 use App\Services\UssdIngestor;
 use App\Services\UssdSync;
@@ -52,6 +53,12 @@ class SystemController extends Controller
             ],
             'showingRehearsal' => Settings::showingRehearsal(),
             'pushConfigured' => $notifier->configured(),
+            'register' => [
+                'units' => PollingUnit::query()->count(),
+                'lgas' => PollingUnit::query()->distinct()->count('lga'),
+                'wards' => PollingUnit::query()->select('lga', 'ward')->distinct()->get()->count(),
+                'registered' => (int) PollingUnit::query()->sum('registered_voters'),
+            ],
             'pushDevices' => PushSubscription::query()->count(),
         ]);
     }
@@ -100,6 +107,27 @@ class SystemController extends Controller
         Audit::record('webhook.reprocess', "Reprocessed webhook events: {$done} applied, {$failed} still failing");
 
         return back()->with($failed ? 'error' : 'status', "{$done} events applied, {$failed} still failing.");
+    }
+
+    /**
+     * Import the PU register: the bundled file, or an uploaded CSV.
+     */
+    public function importRegister(Request $request, PollingUnitImporter $importer): RedirectResponse
+    {
+        $request->validate(['file' => ['nullable', 'file', 'max:4096', 'mimetypes:text/plain,text/csv,application/csv,application/vnd.ms-excel']]);
+        $upload = $request->file('file');
+
+        try {
+            $result = $importer->import($upload ? $upload->getRealPath() : PollingUnitImporter::bundledPath());
+        } catch (Throwable $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        $source = $upload ? $upload->getClientOriginalName() : 'the bundled Ebonyi register';
+        Audit::record('system.pu_import', "Imported polling units from {$source}: {$result['created']} added, {$result['updated']} updated".($result['errors'] ? ', '.count($result['errors']).' rows skipped' : ''));
+
+        return back()
+            ->with($result['errors'] ? 'error' : 'status', "Polling units from {$source}: {$result['created']} added, {$result['updated']} updated.".($result['errors'] ? ' Some rows were skipped: '.implode('; ', array_slice($result['errors'], 0, 5)) : ''));
     }
 
     /**

@@ -105,6 +105,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/system/sync', [SystemController::class, 'sync'])->name('system.sync');
         Route::post('/system/reprocess', [SystemController::class, 'reprocess'])->name('system.reprocess');
         Route::post('/system/migrate', [SystemController::class, 'migrate'])->name('system.migrate');
+        Route::post('/system/polling-units', [SystemController::class, 'importRegister'])->name('system.polling-units');
         Route::post('/system/push-keys', [SystemController::class, 'pushKeys'])->name('system.push-keys');
         Route::post('/system/data-view', [SystemController::class, 'dataView'])->name('system.data-view');
 

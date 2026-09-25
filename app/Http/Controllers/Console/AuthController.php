@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Console;
 
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
+use App\Models\PollingUnit;
 use App\Models\PushSubscription;
 use App\Models\User;
+use App\Services\PollingUnitImporter;
 use App\Support\Audit;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -99,11 +101,23 @@ class AuthController extends Controller
             'role' => UserRole::Admin,
         ]);
 
+        // The PU register ships with the app, so the boards work before
+        // the USSD service is connected.
+        $imported = '';
+        try {
+            if (! PollingUnit::query()->exists()) {
+                $result = app(PollingUnitImporter::class)->import(PollingUnitImporter::bundledPath());
+                $imported = " The register of {$result['created']} polling units is loaded.";
+            }
+        } catch (Throwable $e) {
+            report($e);
+        }
+
         Auth::login($user, remember: true);
         $request->session()->regenerate();
         Audit::record('auth.setup', 'Created the first admin account');
 
-        return redirect()->route('system')->with('status', "Welcome, {$user->name}. Connect the USSD service below, then add your team under Users.");
+        return redirect()->route('system')->with('status', "Welcome, {$user->name}.{$imported} Connect the USSD service below, then add your team under Users.");
     }
 
     public function logout(Request $request): RedirectResponse
