@@ -19,6 +19,7 @@ use App\Http\Controllers\Console\SystemController;
 use App\Http\Controllers\Console\TownHallManageController;
 use App\Http\Controllers\Console\UserController;
 use App\Http\Controllers\JoinController;
+use App\Http\Controllers\RunnerController;
 use App\Http\Controllers\TownHallController;
 use App\Http\Middleware\RequireAdmin;
 use Illuminate\Support\Facades\Route;
@@ -29,6 +30,9 @@ Route::post('/setup', [AuthController::class, 'setup'])->middleware('throttle:5,
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 Route::view('/offline', 'offline')->name('offline');
+
+// For an external pinger on hosts without per-minute cron (URL on the System page).
+Route::get('/cron/{token}', RunnerController::class)->middleware('throttle:30,1')->name('runner');
 
 // Public sign-up for election updates (the broadcast opt-in).
 Route::get('/join', [JoinController::class, 'show'])->name('join');

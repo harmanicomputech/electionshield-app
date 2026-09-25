@@ -34,6 +34,7 @@
         <env name="USSD_API_URL" value="https://ussd.test/api"/>
         <env name="USSD_API_TOKEN" value="api-token"/>
         <env name="ADMIN_PASSWORD" value="setup-key"/>
+        <env name="BACKGROUND_RUNNER" value="false"/>
         <env name="SESSION_DRIVER" value="array"/>
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>

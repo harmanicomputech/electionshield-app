@@ -14,6 +14,7 @@ use App\Services\PushNotifier;
 use App\Services\UssdIngestor;
 use App\Services\UssdSync;
 use App\Support\Audit;
+use App\Support\BackgroundRunner;
 use App\Support\Settings;
 use App\Support\Time;
 use Illuminate\Http\RedirectResponse;
@@ -44,6 +45,8 @@ class SystemController extends Controller
             'states' => SyncState::query()->get()->keyBy('resource'),
             'resources' => UssdSync::RESOURCES,
             'heartbeat' => $heartbeat ? Time::parse($heartbeat) : null,
+            'runnerSource' => ['web' => 'after a page visit', 'pinger' => 'by the pinger', 'cron' => 'by cron'][Settings::get('runner_source')] ?? null,
+            'runnerUrl' => route('runner', BackgroundRunner::token()),
             'counts' => [
                 'Polling units' => PollingUnit::query()->count(),
                 'Results (real)' => Result::query()->where('rehearsal', false)->count(),

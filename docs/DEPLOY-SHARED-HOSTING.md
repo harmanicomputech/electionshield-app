@@ -59,15 +59,15 @@ Then:
 2. In the USSD console, press **Settings → Send all existing data to the dashboard**.
 3. On the System page, **Last event** should now show a recent event.
 
-## 6. Add the cron job
+## 6. Keep background work running (no per-minute cron needed)
 
-In **Cron Jobs**, add one job that runs every minute (`* * * * *`):
+The catch-up sync (every 3 minutes), scheduled broadcasts and broadcast batches run in the background. Many shared hosts, DomainKing included, don't allow per-minute cron jobs, so the app doesn't depend on one. It uses the same approach as the USSD service:
 
-```
-/usr/local/bin/php /home/USERNAME/domains/shield.yourdomain.com/election-shield-web/artisan schedule:run >> /dev/null 2>&1
-```
+1. **Automatically after page visits.** Once a page has gone to the browser, the app does any work that is due, at most every 15 seconds. You don't need to set anything up.
+2. **A free pinger, every minute. Set this up.** It covers quiet periods. Create a free account at **cron-job.org** (or UptimeRobot) and add a job that opens the **pinger URL** from the System page (`https://…/cron/<secret>`) **every minute**. It's an ordinary web visit, so shared-hosting rules allow it. Keep the URL secret.
+3. **Your host's cron, hourly, as a backup** (optional): `0 * * * * /usr/local/bin/php /home/USERNAME/domains/shield.yourdomain.com/election-shield-web/artisan app:tick >> /dev/null 2>&1`
 
-Use the real path shown in File Manager and your host's PHP 8.3+ binary. Within two minutes, **Scheduler cron** on the System page turns **Running**. From then on it syncs every 3 minutes.
+If your host does allow a per-minute cron, `* * * * * … artisan schedule:run` works too. **Check it:** on the System page, **Background work** turns **Running** and says how it last ran (after a page visit, by the pinger, or by cron).
 
 ## 7. Turn on notifications
 
@@ -84,7 +84,7 @@ Nigerian networks block promotional SMS to numbers on the do-not-disturb (DND) l
 
 **WhatsApp** (optional) needs a verified business on the WhatsApp Business Platform and templates approved in WhatsApp Manager. Put the phone number ID, a permanent access token and the app secret in `.env`. In the Meta app, set the webhook to `https://shield.yourdomain.com/api/whatsapp`, with `WHATSAPP_VERIFY_TOKEN` as the verify token, and subscribe to **messages**.
 
-**Who gets what:** supporters receive broadcasts only if they opted in (the public sign-up page `/join`, or an import marked "yes"). Agents and coordinators get operational SMS. Anyone who replies STOP is never messaged again on that channel. Batches are sent by the scheduler cron, about 100 numbers per request.
+**Who gets what:** supporters receive broadcasts only if they opted in (the public sign-up page `/join`, or an import marked "yes"). Agents and coordinators get operational SMS. Anyone who replies STOP is never messaged again on that channel. Batches are sent by the background work (step 6), about 100 numbers per request.
 
 ## 9. Add your team
 

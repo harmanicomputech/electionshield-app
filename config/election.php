@@ -86,8 +86,8 @@ return [
 
     'admin_password' => env('ADMIN_PASSWORD'),
 
-    // Shared hosting has no permanent queue worker: the scheduler cron works
-    // the queue for most of each minute instead.
-    'scheduler_runs_queue' => (bool) env('SCHEDULER_RUNS_QUEUE', true),
+    // Background work (catch-up sync, broadcasts) runs after web requests
+    // and from the pinger URL / host cron; see App\Support\BackgroundRunner.
+    'background_runner' => (bool) env('BACKGROUND_RUNNER', true),
 
 ];

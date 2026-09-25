@@ -40,10 +40,11 @@
         <dl class="kv small">
             <dt>USSD_API_URL</dt><dd><code>{{ $apiUrl }}</code></dd>
             <dt>USSD_API_TOKEN</dt><dd>ELECTION_API_TOKEN from the USSD server {!! $ok($apiConfigured) !!}</dd>
-            <dt>Scheduler cron</dt><dd>{!! $heartbeat && $heartbeat->gt(now()->subMinutes(3)) ? '<span class="badge good">✓ Running</span>' : '<span class="badge bad">✗ Not running</span>' !!} <span class="muted">{{ $heartbeat ? 'last '.\App\Support\Time::local($heartbeat, 'j M, g:i A') : '' }}</span></dd>
+            <dt>Background work</dt><dd>{!! $heartbeat && $heartbeat->gt(now()->subMinutes(5)) ? '<span class="badge good">✓ Running</span>' : '<span class="badge bad">✗ Not running</span>' !!} <span class="muted">{{ $heartbeat ? 'last '.\App\Support\Time::local($heartbeat, 'j M, g:i A').($runnerSource ? " ({$runnerSource})" : '') : '' }}</span></dd>
         </dl>
         <p></p>
-        <p class="small muted">Every 3 minutes the cron pulls whatever changed since the last sync.</p>
+        <p class="small muted">Every 3 minutes the background work pulls whatever changed since the last sync. Your host forbids per-minute cron jobs, so set a free pinger (cron-job.org) to open this URL <b>every minute</b>, and keep it secret:</p>
+        <p><code>{{ $runnerUrl }}</code></p>
         <div class="actions">
             <form method="post" action="{{ route('system.sync') }}">@csrf<button class="button" type="submit" @disabled(! $apiConfigured)>Sync now</button></form>
             <form method="post" action="{{ route('system.sync') }}">@csrf<input type="hidden" name="full" value="1"><button class="button secondary" type="submit" @disabled(! $apiConfigured)>Full import</button></form>

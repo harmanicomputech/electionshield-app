@@ -46,7 +46,9 @@ class BroadcastDispatcher
             ->chunk(self::BATCH)
             ->each(fn ($ids) => SendBroadcastBatch::dispatch($broadcast->id, $ids->values()->all()));
 
-        $this->finishIfDone($broadcast);
+        // Reload: the status was changed on the locked copy above. With no
+        // recipients (or every batch already sent) it is finished now.
+        $this->finishIfDone($broadcast->refresh());
 
         return $count;
     }

@@ -71,11 +71,7 @@ Shares are of total valid votes, which includes OTHERS. OTHERS is not a candidat
 
 ## Deployment
 
-Shared hosting (DirectAdmin/cPanel, no terminal): see `docs/DEPLOY-SHARED-HOSTING.md`. In short: build the zip with `scripts/build-shared-hosting.sh`, upload and extract it, fill in `.env`, create the admin at `/login`, and add one cron job:
-
-```
-* * * * * /usr/local/bin/php /home/USER/domains/DOMAIN/election-shield-web/artisan schedule:run >> /dev/null 2>&1
-```
+Shared hosting (DirectAdmin/cPanel, no terminal): see `docs/DEPLOY-SHARED-HOSTING.md`. In short: build the zip with `scripts/build-shared-hosting.sh`, upload and extract it, fill in `.env`, and create the admin at `/login`. Hosts that forbid per-minute cron jobs need a free pinger (cron-job.org) opening the **pinger URL** from the System page every minute; background work also runs after page visits. Where a per-minute cron is allowed, `php artisan schedule:run` does the same.
 
 ## Still to build
 

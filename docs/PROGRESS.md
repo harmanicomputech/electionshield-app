@@ -33,10 +33,10 @@ The upload package is built from `claude/pu-register` with `scripts/build-shared
 - [ ] 5. Edit `election-shield-web/.env`: `APP_URL`, the `DB_*` values, `USSD_API_TOKEN` (the USSD server's `ELECTION_API_TOKEN`), and `VAPID_SUBJECT` (`mailto:` plus your email).
 - [ ] 6. Open `https://shield.techatronagency.com/login` and create the first admin, using `ADMIN_PASSWORD` from `.env` as the setup key.
 - [ ] 7. In the USSD server's `election-shield/.env`, set `DASHBOARD_WEBHOOK_URL=https://shield.techatronagency.com/api/ussd-events`, and set `DASHBOARD_API_TOKEN` and `DASHBOARD_WEBHOOK_SECRET` to `USSD_WEBHOOK_TOKEN` and `USSD_WEBHOOK_SECRET` from this app's `.env`.
-- [ ] 8. Add the cron job (every minute): `/usr/local/bin/php /home/USER/domains/shield.techatronagency.com/election-shield-web/artisan schedule:run >> /dev/null 2>&1`
+- [ ] 8. Background work: the host forbids per-minute cron, so add a free **cron-job.org** job that opens the **pinger URL** from the System page every minute (and optionally an hourly host cron running `artisan app:tick`).
 - [ ] 9. On the System page, check that the **Polling unit register** card reads 3,308 polling units in 13 LGAs and 169 wards (loaded at step 6). Then press **Full import** to bring in the agents and anything already submitted.
 - [ ] 10. In the USSD console, press **Settings → Send all existing data to the dashboard**, then check that System → **Last event** shows it.
-- [ ] 11. On the System page, check that **Scheduler cron** reads "Running" (it can take up to 2 minutes).
+- [ ] 11. On the System page, check that **Background work** reads "Running … (by the pinger)".
 - [ ] 12. On the System page, press **Set up notifications**, then turn them on for your phone under More → Notifications and press **Send a test**.
 - [ ] 13. Install the app on a phone (Android: Install app; iPhone: Share → Add to Home Screen).
 
@@ -46,7 +46,9 @@ Record any problem found here under "Issues from deployment", with the page and 
 
 ## Issues from deployment
 
-- (none yet)
+- 25 Sep: the web app installed and runs on the server (step 1 done).
+- 25 Sep: the host forbids per-minute cron jobs. Fixed with the pinger URL and after-request background work (same design as the USSD service). A scheduled broadcast with no recipients stayed on "sending"; fixed.
+- 25 Sep: rehearsed step 2 end to end on a local copy of the live USSD version (`claude/hello-i876f8`): a result, an urgent incident, a check-in and a materials report reached the web app by webhook and by the catch-up sync, with no duplicates after late webhooks and a backfill.
 
 ## Next, after deployment
 
