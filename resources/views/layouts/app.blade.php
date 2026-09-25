@@ -21,8 +21,11 @@
         'users' => 'M16 20v-2a4 4 0 0 0-8 0v2M12 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z',
         'audit' => 'M9 4h6l1 2h3v14H5V6h3l1-2Zm-1 8h8m-8 4h5',
         'corrections' => 'M4 20h4L19 9l-4-4L4 16v4Zm9-13 4 4',
+        'agents' => 'M17 20v-2a4 4 0 0 0-3-3.9M7 20v-2a4 4 0 0 1 4-4h2M12 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm6-1a2.5 2.5 0 1 0 0-5',
         'map' => 'M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2Zm0 0v14m6-12v14',
+        'sitrep' => 'M6 3h9l4 4v14H6V3Zm9 0v4h4M9 12h7M9 16h7M9 8h3',
         'push' => 'M6 16v-5a6 6 0 1 1 12 0v5l2 2H4l2-2Zm4 4h4',
+        'account' => 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8a7 7 0 0 1 14 0',
         'install' => 'M12 3v12m-5-5 5 5 5-5M5 21h14',
         'logout' => 'M15 4h4v16h-4M10 8l-4 4 4 4M6 12h11',
     ];
@@ -31,6 +34,7 @@
             [$tabs[0][0], $tabs[0][1], $tabs[0][2], $tabs[0][3]],
             [$tabs[1][0], $tabs[1][1], $tabs[1][2], $tabs[1][3]],
             ['monitor', 'Polling units', $tabs[2][2], $tabs[2][3]],
+            ['agents', 'Agents', $icon['agents'], ['agents']],
             ['corrections', 'Corrections', $icon['corrections'], ['corrections']],
         ]],
         ['Results', [
@@ -38,6 +42,7 @@
             ['spread', '25% rule', $icon['spread'], ['spread']],
             ['compare', 'Official vs PVT', $icon['compare'], ['compare', 'compare.*', 'official', 'official.*']],
             ['photos', 'EC8A photos', $icon['photos'], ['photos', 'photos.*']],
+            ['sitrep', 'Situation report', $icon['sitrep'], ['sitrep', 'evidence']],
         ]],
         ['Engage', array_values(array_filter([
             ['townhall.manage', 'Town hall', $icon['townhall'], ['townhall.manage', 'townhall.moderate', 'townhall.create', 'townhall.edit']],
@@ -88,11 +93,12 @@
                 @endforeach
             </nav>
             <div class="side-foot">
+                <a href="{{ route('account') }}" class="{{ $active('account') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ $icon['account'] }}"/></svg><span>My account</span></a>
                 <a href="{{ route('push') }}" class="{{ $active('push') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ $icon['push'] }}"/></svg><span>Notifications</span></a>
                 <button type="button" data-install hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ $icon['install'] }}"/></svg><span>Install app</span></button>
                 <div class="side-user">
                     <span class="avatar" aria-hidden="true">{{ \Illuminate\Support\Str::upper(\Illuminate\Support\Str::substr($user->name, 0, 1)) }}</span>
-                    <span class="who">{{ $user->name }}<small>{{ $user->role->label() }}</small></span>
+                    <span class="who">{{ $user->name }}<small>{{ $user->role->label() }}{{ $user->lga ? ' · '.$user->lga : '' }}</small></span>
                     <form method="post" action="{{ route('logout') }}" data-logout>@csrf<input type="hidden" name="push_endpoint" data-push-endpoint><button type="submit" title="Log out" aria-label="Log out"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ $icon['logout'] }}"/></svg></button></form>
                 </div>
             </div>
@@ -118,7 +124,9 @@
                                 <a href="{{ route('broadcasts') }}">Broadcasts</a>
                                 <hr>
                             @endif
+                            <a href="{{ route('agents') }}">Agents</a>
                             <a href="{{ route('corrections') }}">Corrections{{ $pendingCorrections ? " ({$pendingCorrections})" : '' }}</a>
+                            <a href="{{ route('account') }}">My account</a>
                             <a href="{{ route('push') }}">Notifications</a>
                             <button type="button" data-install hidden>Install app</button>
                             <form method="post" action="{{ route('logout') }}" data-logout>@csrf<input type="hidden" name="push_endpoint" data-push-endpoint><button type="submit">Log out ({{ $user->name }})</button></form>
@@ -175,8 +183,10 @@
                         <a href="{{ route('broadcasts') }}">Broadcasts</a>
                         <hr>
                     @endif
+                    <a href="{{ route('agents') }}">Agents</a>
                     <a href="{{ route('corrections') }}">Corrections{{ $pendingCorrections ? " ({$pendingCorrections})" : '' }}</a>
                     <a href="{{ route('townhall.manage') }}">Town hall</a>
+                    <a href="{{ route('account') }}">My account</a>
                     <a href="{{ route('push') }}">Notifications</a>
                     <button type="button" data-install hidden>Install app</button>
                     <form method="post" action="{{ route('logout') }}" data-logout>@csrf<input type="hidden" name="push_endpoint" data-push-endpoint><button type="submit">Log out ({{ $user->name }})</button></form>

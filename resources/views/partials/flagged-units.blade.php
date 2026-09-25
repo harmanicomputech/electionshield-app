@@ -11,7 +11,7 @@
                     @if (in_array('no_upload', $row['flags'], true))<span class="badge warn">No IReV upload</span>@endif
                 </div>
                 <h3><a class="rowlink" href="{{ route('official.pu', $row['code']) }}">{{ $row['unit']?->name ?? 'PU '.$row['code'] }}</a></h3>
-                <div class="meta">{{ $row['unit']?->inecCode() ?? $row['code'] }} · {{ $row['lga'] }} › {{ $row['ward'] }}</div>
+                <div class="meta">{{ $row['unit']?->inecCode() ?? $row['code'] }} · {{ $row['lga'] }} › {{ $row['ward'] }} · <a href="{{ route('evidence', $row['code']) }}">Evidence pack</a></div>
                 @if ($row['diff'] !== [])
                     @php($ours = $row['pvt']->votesByParty())
                     <dl class="kv small" style="margin-top:8px">

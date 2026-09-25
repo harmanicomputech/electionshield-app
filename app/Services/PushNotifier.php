@@ -57,13 +57,18 @@ class PushNotifier
      *
      * @param  array{title: string, body: string, url: string, tag?: string, urgent?: bool}  $message
      */
-    public function toTopic(string $topic, array $message): int
+    public function toTopic(string $topic, array $message, ?string $lga = null): int
     {
         if (! $this->configured()) {
             return 0;
         }
 
-        return $this->send(PushSubscription::query()->forTopic($topic)->get()->all(), $message);
+        // With an LGA: state-wide people plus those whose home LGA it is.
+        $subscriptions = PushSubscription::query()->forTopic($topic)
+            ->when($lga !== null, fn ($query) => $query->whereHas('user', fn ($users) => $users->whereNull('lga')->orWhere('lga', $lga)))
+            ->get()->all();
+
+        return $this->send($subscriptions, $message);
     }
 
     /**

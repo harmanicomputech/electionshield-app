@@ -12,7 +12,7 @@
 <div class="page-head">
     <div class="crumbs"><a href="{{ route('official') }}">← Enter IReV results</a></div>
     <h1>{{ $unit->name }}</h1>
-    <p class="muted">{{ $unit->inecCode() }} · {{ $unit->lga }} › {{ $unit->ward }}@if ($unit->registered_voters) · {{ number_format($unit->registered_voters) }} registered @endif</p>
+    <p class="muted"><a href="{{ route('evidence', $unit->code) }}">Evidence pack</a> · {{ $unit->inecCode() }} · {{ $unit->lga }} › {{ $unit->ward }}@if ($unit->registered_voters) · {{ number_format($unit->registered_voters) }} registered @endif</p>
 </div>
 
 @foreach ((array) session('warnings') as $warning)

@@ -360,3 +360,31 @@ input[type=file]::file-selector-button { min-height: 44px; padding: 0 16px; marg
   .tile-name { font-size: 10.5px; overflow-wrap: normal; word-break: keep-all; }
   .tile-value { font-size: 17px; }
 }
+.agent-line { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 8px; margin-top: 8px; border-top: 1px solid var(--line); }
+
+/* Printable reports (evidence pack, situation report) */
+.report { max-width: 860px; }
+.report-actions { display: flex; gap: 8px; margin-bottom: 16px; }
+.report-head { border-bottom: 2px solid var(--text); padding-bottom: 12px; margin-bottom: 16px; }
+.report-kicker { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 4px; }
+.report-flag { font-weight: 700; color: var(--bad); margin: 6px 0 0; }
+.report-section { margin-bottom: 18px; break-inside: avoid; }
+.report-section h2 { font-size: 16px; border-bottom: 1px solid var(--line); padding-bottom: 4px; }
+.report-table { margin-bottom: 8px; }
+.report-scroll { overflow-x: auto; max-width: 100%; }
+.report-table td, .report-table th { white-space: nowrap; }
+.report code { word-break: break-all; }
+.report-photo { margin: 0 0 16px; break-inside: avoid; }
+.report-photo img { max-width: 100%; height: auto; border: 1px solid var(--line); border-radius: 6px; }
+.report-foot { margin-top: 24px; border-top: 1px solid var(--line); padding-top: 8px; }
+@media print {
+  :root { color-scheme: light; --text: #000; --muted: #444; --line: #bbb; --surface: #fff; --surface-2: #f3f3f3; --bg: #fff; --bad: #b00; }
+  body, body.has-sidebar { padding: 0 !important; background: #fff; color: #000; font-size: 11pt; }
+  .sidebar, .topbar, .tabbar, .banner, .no-print, .footer, .install-guide, .flash { display: none !important; }
+  main.wrap, body.has-sidebar main.wrap { max-width: none; padding: 0; }
+  a { color: #000; text-decoration: none; }
+  .report-table { font-size: 10pt; }
+  .report-scroll { overflow: visible; }
+  .report-table td, .report-table th { white-space: normal; }
+  .report-photo img { max-height: 21cm; }
+}

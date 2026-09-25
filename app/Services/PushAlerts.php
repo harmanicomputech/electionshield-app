@@ -34,7 +34,7 @@ class PushAlerts
             'url' => route('incidents', ['status' => 'open', 'urgent' => 1], false).'#incident-'.$incident->reference,
             'tag' => 'incident-'.$incident->reference,
             'urgent' => true,
-        ]);
+        ], $incident->lga);
     }
 
     public static function resultCreated(Result $result): void
@@ -57,7 +57,7 @@ class PushAlerts
         return $time !== null && $time->between(now()->subMinutes(self::RECENT_MINUTES), now()->addMinutes(5));
     }
 
-    /** @var list<array{0: string, 1: array<string, mixed>}> */
+    /** @var list<array{0: string, 1: array<string, mixed>, 2: ?string}> */
     private static array $pending = [];
 
     private static ?int $registeredFor = null;
@@ -69,7 +69,7 @@ class PushAlerts
      *
      * @param  array<string, mixed>  $message
      */
-    private static function send(string $topic, array $message): void
+    private static function send(string $topic, array $message, ?string $lga = null): void
     {
         if (self::$registeredFor !== spl_object_id(app())) {
             // A new app instance: nothing left over from an earlier one.
@@ -78,15 +78,15 @@ class PushAlerts
             app()->terminating(fn () => self::flush());
         }
 
-        self::$pending[] = [$topic, $message];
+        self::$pending[] = [$topic, $message, $lga];
     }
 
     public static function flush(): void
     {
         [$pending, self::$pending] = [self::$pending, []];
 
-        foreach ($pending as [$topic, $message]) {
-            app(PushNotifier::class)->toTopic($topic, $message);
+        foreach ($pending as [$topic, $message, $lga]) {
+            app(PushNotifier::class)->toTopic($topic, $message, $lga);
         }
     }
 }

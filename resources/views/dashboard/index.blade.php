@@ -11,7 +11,7 @@
 @section('content')
 <div class="page-head">
     <h1>PVT dashboard</h1>
-    <p class="muted">{{ config('election.name') }} · {{ \Illuminate\Support\Carbon::parse(config('election.date'))->format('l j F Y') }}</p>
+    <p class="muted">{{ config('election.name') }} · {{ \Illuminate\Support\Carbon::parse(config('election.date'))->format('l j F Y') }} · <a href="{{ route('sitrep') }}">Situation report</a>@if (auth()->user()->lga) · <a href="{{ route('collation.lga', auth()->user()->lga) }}">Your LGA: {{ auth()->user()->lga }} →</a>@endif</p>
 </div>
 
 <div class="stats">

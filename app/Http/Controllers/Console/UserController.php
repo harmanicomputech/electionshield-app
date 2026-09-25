@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Console;
 
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
+use App\Models\PollingUnit;
 use App\Models\User;
 use App\Support\Audit;
 use Illuminate\Http\RedirectResponse;
@@ -16,7 +17,10 @@ class UserController extends Controller
 {
     public function index(): View
     {
-        return view('users.index', ['users' => User::query()->orderBy('name')->get()]);
+        return view('users.index', [
+            'users' => User::query()->orderBy('name')->get(),
+            'lgas' => PollingUnit::query()->whereNotNull('lga')->distinct()->orderBy('lga')->pluck('lga'),
+        ]);
     }
 
     public function store(Request $request): RedirectResponse
@@ -27,6 +31,7 @@ class UserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')],
             'role' => ['required', Rule::enum(UserRole::class)],
+            'lga' => ['nullable', 'string', 'max:100', Rule::exists('polling_units', 'lga')],
             'password' => ['required', Password::min(10)],
         ]);
 
@@ -40,6 +45,7 @@ class UserController extends Controller
     {
         $validated = $request->validate([
             'role' => ['required', Rule::enum(UserRole::class)],
+            'lga' => ['nullable', 'string', 'max:100', Rule::exists('polling_units', 'lga')],
             'password' => ['nullable', Password::min(10)],
         ]);
 
@@ -48,6 +54,7 @@ class UserController extends Controller
         }
 
         $user->role = UserRole::from($validated['role']);
+        $user->lga = $validated['lga'] ?? null;
 
         if (filled($validated['password'] ?? null)) {
             $user->password = $validated['password'];
@@ -55,7 +62,7 @@ class UserController extends Controller
         }
 
         $user->save();
-        Audit::record('user.updated', "Updated {$user->name}: {$user->role->label()}".(filled($validated['password'] ?? null) ? ', new password' : ''));
+        Audit::record('user.updated', "Updated {$user->name}: {$user->role->label()}, ".($user->lga ?? 'state-wide').(filled($validated['password'] ?? null) ? ', new password' : ''));
 
         return back()->with('status', "Saved {$user->name}.");
     }

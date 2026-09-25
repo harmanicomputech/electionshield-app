@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\AgentUploadController;
+use App\Http\Controllers\Console\AccountController;
+use App\Http\Controllers\Console\AgentController;
 use App\Http\Controllers\Console\AuditController;
 use App\Http\Controllers\Console\AuthController;
 use App\Http\Controllers\Console\BroadcastController;
@@ -16,6 +18,7 @@ use App\Http\Controllers\Console\OfficialImportController;
 use App\Http\Controllers\Console\OfficialResultController;
 use App\Http\Controllers\Console\PhotoController;
 use App\Http\Controllers\Console\PushController;
+use App\Http\Controllers\Console\ReportController;
 use App\Http\Controllers\Console\SystemController;
 use App\Http\Controllers\Console\TownHallManageController;
 use App\Http\Controllers\Console\UserController;
@@ -61,6 +64,13 @@ Route::middleware('auth')->group(function () {
     Route::get('/monitor/{lga}', [MonitorController::class, 'lga'])->name('monitor.lga');
     Route::get('/monitor/{lga}/{ward}', [MonitorController::class, 'ward'])->name('monitor.ward');
 
+    Route::get('/account', [AccountController::class, 'show'])->name('account');
+    Route::put('/account', [AccountController::class, 'update'])->name('account.update');
+    Route::put('/account/password', [AccountController::class, 'password'])->middleware('throttle:10,1')->name('account.password');
+
+    Route::get('/agents', [AgentController::class, 'index'])->name('agents');
+    Route::get('/evidence/{code}', [ReportController::class, 'evidence'])->name('evidence');
+    Route::get('/sitrep', [ReportController::class, 'sitrep'])->name('sitrep');
     Route::get('/corrections', [CorrectionController::class, 'index'])->name('corrections');
     Route::post('/corrections/{reference}/approve', [CorrectionController::class, 'approve'])->name('corrections.approve');
     Route::post('/corrections/{reference}/reject', [CorrectionController::class, 'reject'])->name('corrections.reject');
@@ -100,6 +110,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware(RequireAdmin::class)->group(function () {
         // The export includes agents' phone numbers.
         Route::get('/compare/export', [CompareController::class, 'export'])->name('compare.export');
+        Route::get('/agents/export', [AgentController::class, 'export'])->name('agents.export');
         Route::delete('/photos/{photo}', [PhotoController::class, 'destroy'])->name('photos.destroy');
         Route::delete('/official/pu/{code}', [OfficialResultController::class, 'destroy'])->name('official.pu.destroy');
         Route::get('/official/import', [OfficialImportController::class, 'show'])->name('official.import');
@@ -114,6 +125,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/system/sync', [SystemController::class, 'sync'])->name('system.sync');
         Route::post('/system/reprocess', [SystemController::class, 'reprocess'])->name('system.reprocess');
         Route::post('/system/migrate', [SystemController::class, 'migrate'])->name('system.migrate');
+        Route::post('/system/clear-rehearsal', [SystemController::class, 'clearRehearsal'])->name('system.clear-rehearsal');
+        Route::get('/system/backup', [SystemController::class, 'backup'])->name('system.backup');
         Route::post('/system/polling-units', [SystemController::class, 'importRegister'])->name('system.polling-units');
         Route::post('/system/push-keys', [SystemController::class, 'pushKeys'])->name('system.push-keys');
         Route::post('/system/data-view', [SystemController::class, 'dataView'])->name('system.data-view');

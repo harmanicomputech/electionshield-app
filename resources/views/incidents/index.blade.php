@@ -41,9 +41,9 @@
     <div>
         <label for="lga">LGA</label>
         <select id="lga" name="lga" data-autosubmit>
-            <option value="">All LGAs</option>
-            @foreach ($lgas as $lga)
-                <option value="{{ $lga }}" @selected(request('lga') === $lga)>{{ $lga }}</option>
+            <option value="all">All LGAs</option>
+            @foreach ($lgas as $option)
+                <option value="{{ $option }}" @selected($lga === $option)>{{ $option }}</option>
             @endforeach
         </select>
     </div>

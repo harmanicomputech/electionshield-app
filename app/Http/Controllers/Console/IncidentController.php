@@ -30,6 +30,12 @@ class IncidentController extends Controller
             'lga' => ['nullable', 'string', 'max:100'],
         ]);
         $status = $filters['status'] ?? 'unresolved';
+        // A coordinator's home LGA is the default; "all" shows every LGA.
+        $filters['lga'] = match (true) {
+            ($filters['lga'] ?? null) === 'all' => null,
+            filled($filters['lga'] ?? null) => $filters['lga'],
+            default => $request->user()->lga,
+        };
 
         $base = Incident::query()->where('rehearsal', Settings::showingRehearsal());
 
@@ -58,7 +64,8 @@ class IncidentController extends Controller
             ],
             'urgentOpen' => (clone $base)->withResponseStatus(Incident::OPEN)->where('urgent', true)->count(),
             'types' => (clone $base)->select('type', 'type_label')->distinct()->orderBy('type')->get(),
-            'lgas' => (clone $base)->whereNotNull('lga')->distinct()->orderBy('lga')->pluck('lga'),
+            'lgas' => (clone $base)->whereNotNull('lga')->distinct()->orderBy('lga')->pluck('lga')->push($request->user()->lga)->filter()->unique()->sort()->values(),
+            'lga' => $filters['lga'],
         ]);
     }
 

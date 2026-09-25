@@ -28,9 +28,9 @@ class PushTest extends TestCase
         {
             public function __construct(private array &$sent) {}
 
-            public function toTopic(string $topic, array $message): int
+            public function toTopic(string $topic, array $message, ?string $lga = null): int
             {
-                $this->sent[] = compact('topic', 'message');
+                $this->sent[] = compact('topic', 'message', 'lga');
 
                 return 1;
             }

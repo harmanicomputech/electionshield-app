@@ -18,14 +18,15 @@ All seven features in the brief (`docs/WEB-APP-HANDOFF.md`) are built and tested
 | 5 | Web Push alerts for urgent incidents and corrections | `claude/web-push` | More → Notifications |
 | 6 | SMS/WhatsApp broadcasts with consent, opt-outs and delivery reports; public sign-up | `claude/broadcasts` | More → Broadcasts, `/join` |
 | 7 | Digital town hall: stream, moderated questions, presenter view, SMS reminder | `claude/town-hall` | `/townhall`, More → Town hall |
+| 10 | Election-day tools: Agents page with call links and silent-PU lists (no check-in / no result / no agent); clear rehearsal data and full backup (CSV zip); printable evidence pack per PU and one-page situation report; My account (name, password) and a home LGA per coordinator (their alerts and default filters) | `claude/election-day-tools` | Agents, System, Situation report, Evidence pack, My account, Users |
 | 9 | Schematic LGA map (25% share, results in, check-ins, incidents) on the Dashboard, PUs and Incidents pages; correction review in the web app through the USSD API, working offline | `claude/map-corrections` | Dashboard, PUs, Incidents, Corrections |
 | 8 | The PU register built in (3,308 PUs, 13 LGAs, 169 wards), loaded at first-admin setup; re-import or upload a newer CSV on the System page, or run `artisan pu:import`. Desktop sidebar navigation (grouped: Election day, Results, Engage, Admin), a top bar on tablets and a bottom tab bar on phones | `claude/pu-register` | System → Polling unit register |
 
-Branches 2–9 are **stacked**: each is built on the one before, so `claude/map-corrections` contains everything. None of them is merged into `main` yet.
+Branches 2–10 are **stacked**: each is built on the one before, so `claude/election-day-tools` contains everything. None of them is merged into `main` yet.
 
 ## Taking it to the server (first deployment)
 
-The upload package is built from `claude/map-corrections` with `scripts/build-shared-hosting.sh`. The full steps are in `docs/DEPLOY-SHARED-HOSTING.md`; this is the short checklist.
+The upload package is built from `claude/election-day-tools` with `scripts/build-shared-hosting.sh`. The full steps are in `docs/DEPLOY-SHARED-HOSTING.md`; this is the short checklist.
 
 - [ ] 1. In DirectAdmin, create a subdomain, e.g. `shield.techatronagency.com`, and turn on SSL (Let's Encrypt).
 - [ ] 2. Choose PHP 8.3 or 8.4 for it.
@@ -63,13 +64,10 @@ Record any problem found here under "Issues from deployment", with the page and 
 
 ## Candidate features not built yet
 
-Offered on 25 Sep; the owner chose the LGA map and correction review first. Still open:
+All offered features are built. Still possible later:
 
-- Agents page with call links and a "silent PUs" list.
-- Clear the web app's rehearsal data; download a full backup (CSV zip).
-- Printable per-PU evidence pack for petitions; one-page situation report.
-- Change your own password; coordinators limited to their LGA.
 - Real LGA boundaries for the map (GRID3, CC BY 4.0) once `services3.arcgis.com` is allowed in the environment's network settings.
+- Coordinators limited to seeing only their LGA's data (today the home LGA sets alerts and default filters; everyone with an account can see all LGAs).
 
 ## Decisions still open
 

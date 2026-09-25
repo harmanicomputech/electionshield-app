@@ -9,6 +9,7 @@ use App\Models\PushSubscription;
 use App\Models\Result;
 use App\Models\SyncState;
 use App\Models\WebhookEvent;
+use App\Services\DataMaintenance;
 use App\Services\PollingUnitImporter;
 use App\Services\PushNotifier;
 use App\Services\UssdIngestor;
@@ -23,6 +24,7 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Throwable;
 
 /**
@@ -55,6 +57,10 @@ class SystemController extends Controller
                 'Webhook events' => WebhookEvent::query()->count(),
             ],
             'showingRehearsal' => Settings::showingRehearsal(),
+            'rehearsalCounts' => [
+                'results' => Result::query()->where('rehearsal', true)->count(),
+                'incidents' => Incident::query()->where('rehearsal', true)->count(),
+            ],
             'pushConfigured' => $notifier->configured(),
             'register' => [
                 'units' => PollingUnit::query()->count(),
@@ -131,6 +137,37 @@ class SystemController extends Controller
 
         return back()
             ->with($result['errors'] ? 'error' : 'status', "Polling units from {$source}: {$result['created']} added, {$result['updated']} updated.".($result['errors'] ? ' Some rows were skipped: '.implode('; ', array_slice($result['errors'], 0, 5)) : ''));
+    }
+
+    /**
+     * Delete rehearsal data before the real election. Needs "CLEAR" and
+     * the admin's password.
+     */
+    public function clearRehearsal(Request $request, DataMaintenance $maintenance): RedirectResponse
+    {
+        $request->validate([
+            'confirm' => ['required', 'in:CLEAR'],
+            'password' => ['required', 'current_password'],
+        ], ['confirm.in' => 'Type CLEAR in capitals to confirm.', 'password.current_password' => 'Wrong password.']);
+
+        $counts = $maintenance->clearRehearsal();
+        Settings::set('data_view', 'real');
+        $summary = collect($counts)->map(fn ($n, $what) => "{$n} {$what}")->implode(', ');
+        Audit::record('system.clear_rehearsal', "Cleared rehearsal data: {$summary}");
+
+        return back()->with('status', "Rehearsal data cleared: {$summary}. Dashboards now show real results.");
+    }
+
+    /**
+     * Download every table as CSV in one zip.
+     */
+    public function backup(DataMaintenance $maintenance): BinaryFileResponse
+    {
+        @set_time_limit(300);
+        $path = $maintenance->backup();
+        Audit::record('system.backup', 'Downloaded a full backup');
+
+        return response()->download($path, 'election-shield-backup-'.now()->setTimezone(config('election.timezone'))->format('Y-m-d-Hi').'.zip', ['Content-Type' => 'application/zip'])->deleteFileAfterSend();
     }
 
     /**

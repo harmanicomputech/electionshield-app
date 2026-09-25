@@ -97,6 +97,28 @@
     </section>
 
     <section class="card">
+        <h2>Backup</h2>
+        <p class="small">Every table as CSV in one zip: the register, agents, results, incidents, official figures, broadcasts, town hall, users (no passwords) and the audit log. Download one after each rehearsal and on election night, and keep copies off the server.</p>
+        <a class="button secondary" href="{{ route('system.backup') }}">Download full backup</a>
+        <p class="small muted" style="margin-top:8px">EC8A photo files aren't in the zip (size); copy <code>storage/app/private/ec8a/</code> with the File Manager. Their fingerprints are in the zip.</p>
+    </section>
+
+    <section class="card">
+        <h2>Clear rehearsal data</h2>
+        <p class="small">Before the real election, remove what the rehearsals left here: {{ number_format($rehearsalCounts['results']) }} rehearsal results, {{ number_format($rehearsalCounts['incidents']) }} incidents, their check-ins, materials reports and EC8A photos. Real data is never touched. Clear the USSD service's test data too (its Settings page).</p>
+        <form method="post" action="{{ route('system.clear-rehearsal') }}" onsubmit="return confirm('Delete all rehearsal data from the web app?')">
+            @csrf
+            <div class="filters">
+                <div><label for="c-confirm">Type CLEAR</label><input id="c-confirm" type="text" name="confirm" autocomplete="off" required></div>
+                <div><label for="c-password">Your password</label><input id="c-password" type="password" name="password" autocomplete="current-password" required></div>
+            </div>
+            @error('confirm')<div class="field-error">{{ $message }}</div>@enderror
+            @error('password')<div class="field-error">{{ $message }}</div>@enderror
+            <button class="button danger" type="submit">Clear rehearsal data</button>
+        </form>
+    </section>
+
+    <section class="card">
         <h2>Polling unit register</h2>
         <p class="small">{{ number_format($register['units']) }} polling units in {{ $register['lgas'] }} LGAs and {{ number_format($register['wards']) }} wards · {{ number_format($register['registered']) }} registered voters.</p>
         <form method="post" action="{{ route('system.polling-units') }}" enctype="multipart/form-data">

@@ -23,6 +23,8 @@
                 <option value="{{ $role->value }}" @selected(old('role', 'coordinator') === $role->value)>{{ $role->label() }}</option>
             @endforeach
         </select>
+        <label for="lga">Home LGA (alerts and default filters)</label>
+        <select id="lga" name="lga"><option value="">State-wide</option>@foreach ($lgas as $lga)<option @selected(old('lga') === $lga)>{{ $lga }}</option>@endforeach</select>
         <label for="password">Password (at least 10 characters)</label>
         <input id="password" type="text" name="password" required autocomplete="off">
         @error('password')<div class="field-error">{{ $message }}</div>@enderror
@@ -40,7 +42,7 @@
                 @foreach ($users as $user)
                     <tr>
                         <td class="key"><b>{{ $user->name }}</b><span class="muted small" style="display:block">{{ $user->email }}</span></td>
-                        <td data-label="Role"><span class="badge">{{ $user->role->label() }}</span></td>
+                        <td data-label="Role"><span class="badge">{{ $user->role->label() }}</span> <span class="muted small">{{ $user->lga ?? 'state-wide' }}</span></td>
                         <td data-label="Last login">{{ $user->last_login_at ? \App\Support\Time::local($user->last_login_at, 'j M, g:i A') : 'never' }}</td>
                         <td data-label="Change">
                             <details>
@@ -53,6 +55,8 @@
                                             <option value="{{ $role->value }}" @selected($user->role === $role)>{{ $role->label() }}</option>
                                         @endforeach
                                     </select>
+                                    <label for="lga-{{ $user->id }}">Home LGA</label>
+                                    <select id="lga-{{ $user->id }}" name="lga"><option value="">State-wide</option>@foreach ($lgas as $lga)<option @selected($user->lga === $lga)>{{ $lga }}</option>@endforeach</select>
                                     <label for="pw-{{ $user->id }}">New password (optional)</label>
                                     <input id="pw-{{ $user->id }}" type="text" name="password" autocomplete="off">
                                     <p></p>
