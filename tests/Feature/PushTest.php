@@ -76,9 +76,20 @@ class PushTest extends TestCase
         $this->assertTrue($this->sent[0]['message']['urgent']);
     }
 
-    public function test_non_urgent_old_and_rehearsal_incidents(): void
+    public function test_a_non_urgent_incident_goes_to_its_own_topic(): void
     {
-        $this->sendEvent('incident.reported', $this->incident(['reference' => 'IN2', 'type' => 'delay', 'urgent' => false]))->assertOk();
+        $this->sendEvent('incident.reported', $this->incident(['reference' => 'IN2', 'type' => 'delay', 'type_label' => 'Late materials', 'urgent' => false]))->assertOk();
+
+        $this->assertCount(1, $this->sent);
+        $this->assertSame('incidents', $this->sent[0]['topic']);
+        $this->assertSame('Late materials reported', $this->sent[0]['message']['title']);
+        $this->assertFalse($this->sent[0]['message']['urgent']);
+        $this->assertStringNotContainsString('urgent=', $this->sent[0]['message']['url']);
+        $this->assertSame('Abakaliki', $this->sent[0]['lga']);
+    }
+
+    public function test_old_and_rehearsal_incidents(): void
+    {
         $this->sendEvent('incident.reported', $this->incident(['reference' => 'IN3', 'reported_at' => now()->subHours(2)->toIso8601String()]))->assertOk();
         $this->sendEvent('incident.reported', $this->incident(['reference' => 'IN5', 'reported_at' => now()->addDay()->toIso8601String()]))->assertOk();
         $this->assertCount(0, $this->sent);
@@ -87,10 +98,24 @@ class PushTest extends TestCase
         $this->assertSame('[Rehearsal] ⚠ Violence reported', $this->sent[0]['message']['title']);
     }
 
+    public function test_a_new_result_alerts_with_its_votes(): void
+    {
+        $this->sendEvent('result.submitted', $this->resultPayload(['reference' => 'RS1', 'submitted_at' => now()->toIso8601String()]))->assertOk();
+        $this->sendEvent('result.submitted', $this->resultPayload(['reference' => 'RS1', 'submitted_at' => now()->toIso8601String()]))->assertOk();
+        $this->sendEvent('result.submitted', $this->resultPayload(['reference' => 'RS9', 'submitted_at' => now()->subHours(3)->toIso8601String()]))->assertOk();
+
+        $this->assertCount(1, $this->sent);
+        $this->assertSame('results', $this->sent[0]['topic']);
+        $this->assertSame('Result in: Polling Unit 21202633007', $this->sent[0]['message']['title']);
+        $this->assertMatchesRegularExpression('/^Abakaliki › Abakaliki Ward 01: APC \d/', $this->sent[0]['message']['body']);
+        $this->assertStringNotContainsString('+234', json_encode($this->sent[0]['message']));
+        $this->assertSame('Abakaliki', $this->sent[0]['lga']);
+    }
+
     public function test_a_correction_awaiting_review_alerts(): void
     {
         $this->sendEvent('result.submitted', $this->resultPayload(['reference' => 'RS1', 'submitted_at' => now()->toIso8601String()]))->assertOk();
-        $this->assertCount(0, $this->sent);
+        $this->sent = [];
 
         $this->sendEvent('result.correction_requested', $this->resultPayload(['reference' => 'RS2', 'status' => 'pending', 'corrects_reference' => 'RS1', 'submitted_at' => now()->toIso8601String()]))->assertOk();
 

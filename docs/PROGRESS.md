@@ -15,7 +15,7 @@ All seven features in the brief (`docs/WEB-APP-HANDOFF.md`) are built and tested
 | 2 | PU monitoring board (check-in, materials, results, incidents) and incident feed with acknowledge/resolve, working offline | `claude/pu-monitoring-incidents` | PUs, Incidents |
 | 3 | Official results: IReV per PU, EC8B/EC8C collations, CSV import, comparison with the PVT, evidence export | `claude/official-results` | Results → Official vs PVT |
 | 4 | EC8A photos tied to the result reference, the agents' no-login upload link, offline upload queue, review, fingerprints | `claude/ec8a-photos` | Results → EC8A photos, `/u/{ref}/{token}` |
-| 5 | Web Push alerts for urgent incidents and corrections | `claude/web-push` | More → Notifications |
+| 5 | Web Push alerts for urgent incidents, other incidents, new results and corrections | `claude/web-push` | More → Notifications |
 | 6 | SMS/WhatsApp broadcasts with consent, opt-outs and delivery reports; public sign-up | `claude/broadcasts` | More → Broadcasts, `/join` |
 | 7 | Digital town hall: stream, moderated questions, presenter view, SMS reminder | `claude/town-hall` | `/townhall`, More → Town hall |
 | 10 | Election-day tools: Agents page with call links and silent-PU lists (no check-in / no result / no agent); clear rehearsal data and full backup (CSV zip); printable evidence pack per PU and one-page situation report; My account (name, password) and a home LGA per coordinator (their alerts and default filters) | `claude/election-day-tools` | Agents, System, Situation report, Evidence pack, My account, Users |
@@ -51,6 +51,7 @@ Record any problem found here under "Issues from deployment", with the page and 
 - 25 Sep: the web app installed and runs on the server (step 1 done).
 - 25 Sep: the host forbids per-minute cron jobs. Fixed with the pinger URL and after-request background work (same design as the USSD service). A scheduled broadcast with no recipients stayed on "sending"; fixed.
 - 25 Sep: the full package is installed on `electionshield.techatronagency.com` and connected to the USSD service both ways (webhook and read API; Full import and "Send all existing data" worked), with the cron-job.org pinger running (steps 1–11 done).
+- 25 Sep: no live alerts for new results. Push only covered urgent incidents and corrections; added topics for each new result and for non-urgent incidents (devices already subscribed tick them and press Save choices).
 - 25 Sep: rehearsed step 2 end to end on a local copy of the live USSD version (`claude/hello-i876f8`): a result, an urgent incident, a check-in and a materials report reached the web app by webhook and by the catch-up sync, with no duplicates after late webhooks and a backfill.
 
 ## Next, after deployment

@@ -9,7 +9,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class PushSubscription extends Model
 {
     public const TOPICS = [
-        'urgent_incidents' => 'Urgent incidents (violence, vote suppression, malpractice)',
+        'urgent_incidents' => 'Urgent incidents (the types the USSD service marks urgent, e.g. violence)',
+        'incidents' => 'Other incidents (late materials, delays and the like)',
+        'results' => 'Each new result submitted by an agent',
         'corrections' => 'Corrections waiting for review',
     ];
 
