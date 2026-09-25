@@ -2,11 +2,11 @@
 
 Where the project stands and what comes next. Update it whenever something is finished.
 
-Last updated: 25 September 2026 (PU register added).
+Last updated: 25 September 2026 (deployed and connected to the USSD service).
 
 ## Built so far
 
-All seven features in the brief (`docs/WEB-APP-HANDOFF.md`) are built and tested. There are 94 automated tests, and each feature was also checked in a real browser at phone (360px) and desktop width.
+All seven features in the brief (`docs/WEB-APP-HANDOFF.md`) are built and tested. There are 118 automated tests, and each feature was also checked in a real browser at phone (360px) and desktop width.
 
 | # | Feature | Branch | Where in the app |
 | --- | --- | --- | --- |
@@ -28,17 +28,17 @@ Branches 2–10 are **stacked**: each is built on the one before, so `claude/ele
 
 The upload package is built from `claude/election-day-tools` with `scripts/build-shared-hosting.sh`. The full steps are in `docs/DEPLOY-SHARED-HOSTING.md`; this is the short checklist.
 
-- [ ] 1. In DirectAdmin, create a subdomain, e.g. `shield.techatronagency.com`, and turn on SSL (Let's Encrypt).
-- [ ] 2. Choose PHP 8.3 or 8.4 for it.
-- [ ] 3. Create a MySQL database and user, separate from the USSD service's.
-- [ ] 4. Upload `election-shield-web-shared-hosting.zip` to `domains/shield.techatronagency.com/` and extract it. `election-shield-web/` must sit next to `public_html/`, not inside it.
-- [ ] 5. Edit `election-shield-web/.env`: `APP_URL`, the `DB_*` values, `USSD_API_TOKEN` (the USSD server's `ELECTION_API_TOKEN`), and `VAPID_SUBJECT` (`mailto:` plus your email).
-- [ ] 6. Open `https://shield.techatronagency.com/login` and create the first admin, using `ADMIN_PASSWORD` from `.env` as the setup key.
-- [ ] 7. In the USSD server's `election-shield/.env`, set `DASHBOARD_WEBHOOK_URL=https://shield.techatronagency.com/api/ussd-events`, and set `DASHBOARD_API_TOKEN` and `DASHBOARD_WEBHOOK_SECRET` to `USSD_WEBHOOK_TOKEN` and `USSD_WEBHOOK_SECRET` from this app's `.env`.
-- [ ] 8. Background work: the host forbids per-minute cron, so add a free **cron-job.org** job that opens the **pinger URL** from the System page every minute (and optionally an hourly host cron running `artisan app:tick`).
-- [ ] 9. On the System page, check that the **Polling unit register** card reads 3,308 polling units in 13 LGAs and 169 wards (loaded at step 6). Then press **Full import** to bring in the agents and anything already submitted.
-- [ ] 10. In the USSD console, press **Settings → Send all existing data to the dashboard**, then check that System → **Last event** shows it.
-- [ ] 11. On the System page, check that **Background work** reads "Running … (by the pinger)".
+- [x] 1. In DirectAdmin, create a subdomain, e.g. `shield.techatronagency.com`, and turn on SSL (Let's Encrypt).
+- [x] 2. Choose PHP 8.3 or 8.4 for it.
+- [x] 3. Create a MySQL database and user, separate from the USSD service's.
+- [x] 4. Upload `election-shield-web-shared-hosting.zip` to `domains/shield.techatronagency.com/` and extract it. `election-shield-web/` must sit next to `public_html/`, not inside it.
+- [x] 5. Edit `election-shield-web/.env`: `APP_URL`, the `DB_*` values, `USSD_API_TOKEN` (the USSD server's `ELECTION_API_TOKEN`), and `VAPID_SUBJECT` (`mailto:` plus your email).
+- [x] 6. Open `https://shield.techatronagency.com/login` and create the first admin, using `ADMIN_PASSWORD` from `.env` as the setup key.
+- [x] 7. In the USSD server's `election-shield/.env`, set `DASHBOARD_WEBHOOK_URL=https://shield.techatronagency.com/api/ussd-events`, and set `DASHBOARD_API_TOKEN` and `DASHBOARD_WEBHOOK_SECRET` to `USSD_WEBHOOK_TOKEN` and `USSD_WEBHOOK_SECRET` from this app's `.env`.
+- [x] 8. Background work: the host forbids per-minute cron, so add a free **cron-job.org** job that opens the **pinger URL** from the System page every minute (and optionally an hourly host cron running `artisan app:tick`).
+- [x] 9. On the System page, check that the **Polling unit register** card reads 3,308 polling units in 13 LGAs and 169 wards (loaded at step 6). Then press **Full import** to bring in the agents and anything already submitted.
+- [x] 10. In the USSD console, press **Settings → Send all existing data to the dashboard**, then check that System → **Last event** shows it.
+- [x] 11. On the System page, check that **Background work** reads "Running … (by the pinger)".
 - [ ] 12. On the System page, press **Set up notifications**, then turn them on for your phone under More → Notifications and press **Send a test**.
 - [ ] 13. Install the app on a phone (Android: Install app; iPhone: Share → Add to Home Screen).
 
@@ -50,6 +50,7 @@ Record any problem found here under "Issues from deployment", with the page and 
 
 - 25 Sep: the web app installed and runs on the server (step 1 done).
 - 25 Sep: the host forbids per-minute cron jobs. Fixed with the pinger URL and after-request background work (same design as the USSD service). A scheduled broadcast with no recipients stayed on "sending"; fixed.
+- 25 Sep: the full package is installed on `electionshield.techatronagency.com` and connected to the USSD service both ways (webhook and read API; Full import and "Send all existing data" worked), with the cron-job.org pinger running (steps 1–11 done).
 - 25 Sep: rehearsed step 2 end to end on a local copy of the live USSD version (`claude/hello-i876f8`): a result, an urgent incident, a check-in and a materials report reached the web app by webhook and by the catch-up sync, with no duplicates after late webhooks and a backfill.
 
 ## Next, after deployment
