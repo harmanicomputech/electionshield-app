@@ -18,7 +18,7 @@ All seven features in the brief (`docs/WEB-APP-HANDOFF.md`) are built and tested
 | 5 | Web Push alerts for urgent incidents and corrections | `claude/web-push` | More → Notifications |
 | 6 | SMS/WhatsApp broadcasts with consent, opt-outs and delivery reports; public sign-up | `claude/broadcasts` | More → Broadcasts, `/join` |
 | 7 | Digital town hall: stream, moderated questions, presenter view, SMS reminder | `claude/town-hall` | `/townhall`, More → Town hall |
-| 8 | The PU register built in (3,308 PUs, 13 LGAs, 169 wards), loaded at first-admin setup; re-import or upload a newer CSV on the System page, or run `artisan pu:import`. Desktop navigation tidied into a More menu | `claude/pu-register` | System → Polling unit register |
+| 8 | The PU register built in (3,308 PUs, 13 LGAs, 169 wards), loaded at first-admin setup; re-import or upload a newer CSV on the System page, or run `artisan pu:import`. Desktop sidebar navigation (grouped: Election day, Results, Engage, Admin), a top bar on tablets and a bottom tab bar on phones | `claude/pu-register` | System → Polling unit register |
 
 Branches 2–8 are **stacked**: each is built on the one before, so `claude/pu-register` contains everything. None of them is merged into `main` yet.
 
