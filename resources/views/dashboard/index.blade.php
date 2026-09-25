@@ -80,7 +80,9 @@
     </section>
 </div>
 
-<section class="card" aria-labelledby="h-field" style="margin-top:16px">
+<div style="margin-top:16px">@include('partials.lga-map', ['map' => $map, 'title' => 'Across the 13 LGAs'])</div>
+
+<section class="card" aria-labelledby="h-field">
     <h2 id="h-field">Field status</h2>
     <dl class="kv">
         <dt>Agents checked in</dt><dd>{{ number_format($field->checkedIn) }} of {{ number_format($field->units) }} PUs ({{ $field->percent($field->checkedIn) }}%)</dd>

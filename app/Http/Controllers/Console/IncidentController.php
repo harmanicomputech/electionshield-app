@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Console;
 
 use App\Http\Controllers\Controller;
 use App\Models\Incident;
+use App\Services\LgaMap;
 use App\Support\Audit;
 use App\Support\Settings;
 use Illuminate\Database\Eloquent\Builder;
@@ -47,6 +48,7 @@ class IncidentController extends Controller
             ->withQueryString();
 
         return view('incidents.index', [
+            'map' => (new LgaMap(Settings::showingRehearsal()))->build(['incidents'], fn ($lga) => route('incidents', ['lga' => $lga, 'status' => $status])),
             'incidents' => $incidents,
             'status' => $status,
             'counts' => [

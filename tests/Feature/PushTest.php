@@ -96,7 +96,7 @@ class PushTest extends TestCase
 
         $this->assertSame('corrections', $this->sent[0]['topic']);
         $this->assertSame('Polling Unit 21202633007: RS2 corrects RS1', $this->sent[0]['message']['body']);
-        $this->assertSame('https://ussd.test/admin/corrections', $this->sent[0]['message']['url']);
+        $this->assertSame('/corrections', $this->sent[0]['message']['url']);
     }
 
     public function test_devices_opt_in_change_topics_and_opt_out(): void

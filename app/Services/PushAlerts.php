@@ -46,7 +46,7 @@ class PushAlerts
         self::send('corrections', [
             'title' => ($result->rehearsal ? '[Rehearsal] ' : '').'Correction waiting for review',
             'body' => ($result->pollingUnit?->name ?? 'PU '.$result->polling_unit_code).": {$result->reference} corrects {$result->corrects_reference}",
-            'url' => config('services.ussd.console_url').'/corrections',
+            'url' => route('corrections', absolute: false),
             'tag' => 'correction-'.$result->reference,
         ]);
     }

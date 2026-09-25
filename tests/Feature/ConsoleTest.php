@@ -164,6 +164,21 @@ class ConsoleTest extends TestCase
         }
     }
 
+    public function test_no_inline_php_directive_comes_before_a_php_block(): void
+    {
+        // Blade matches "@php … @endphp" from the first @php, so a one-line
+        // @php(...) before a block swallows the template between them.
+        foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator(resource_path('views'), \FilesystemIterator::SKIP_DOTS)) as $file) {
+            $view = file_get_contents($file->getPathname());
+            preg_match_all('/(?<!@)@php\s*\(/', $view, $inline, PREG_OFFSET_CAPTURE);
+            preg_match_all('/(?<!@)@php(?!\s*\()/', $view, $blocks, PREG_OFFSET_CAPTURE);
+
+            if ($inline[0] !== [] && $blocks[0] !== []) {
+                $this->assertLessThan($inline[0][0][1], end($blocks[0])[1], $file->getPathname().': move the @php block above the one-line @php(...).');
+            }
+        }
+    }
+
     public function test_scripts_read_form_urls_with_get_attribute(): void
     {
         // A form field named "action" replaces form.action with the field,

@@ -18,13 +18,14 @@ All seven features in the brief (`docs/WEB-APP-HANDOFF.md`) are built and tested
 | 5 | Web Push alerts for urgent incidents and corrections | `claude/web-push` | More → Notifications |
 | 6 | SMS/WhatsApp broadcasts with consent, opt-outs and delivery reports; public sign-up | `claude/broadcasts` | More → Broadcasts, `/join` |
 | 7 | Digital town hall: stream, moderated questions, presenter view, SMS reminder | `claude/town-hall` | `/townhall`, More → Town hall |
+| 9 | Schematic LGA map (25% share, results in, check-ins, incidents) on the Dashboard, PUs and Incidents pages; correction review in the web app through the USSD API, working offline | `claude/map-corrections` | Dashboard, PUs, Incidents, Corrections |
 | 8 | The PU register built in (3,308 PUs, 13 LGAs, 169 wards), loaded at first-admin setup; re-import or upload a newer CSV on the System page, or run `artisan pu:import`. Desktop sidebar navigation (grouped: Election day, Results, Engage, Admin), a top bar on tablets and a bottom tab bar on phones | `claude/pu-register` | System → Polling unit register |
 
-Branches 2–8 are **stacked**: each is built on the one before, so `claude/pu-register` contains everything. None of them is merged into `main` yet.
+Branches 2–9 are **stacked**: each is built on the one before, so `claude/map-corrections` contains everything. None of them is merged into `main` yet.
 
 ## Taking it to the server (first deployment)
 
-The upload package is built from `claude/pu-register` with `scripts/build-shared-hosting.sh`. The full steps are in `docs/DEPLOY-SHARED-HOSTING.md`; this is the short checklist.
+The upload package is built from `claude/map-corrections` with `scripts/build-shared-hosting.sh`. The full steps are in `docs/DEPLOY-SHARED-HOSTING.md`; this is the short checklist.
 
 - [ ] 1. In DirectAdmin, create a subdomain, e.g. `shield.techatronagency.com`, and turn on SSL (Let's Encrypt).
 - [ ] 2. Choose PHP 8.3 or 8.4 for it.
@@ -59,6 +60,16 @@ Record any problem found here under "Issues from deployment", with the page and 
 5. **Broadcast set-up:** Africa's Talking API key, a DND-capable sender ID, and the delivery-report and opt-out callback URLs (`docs/DEPLOY-SHARED-HOSTING.md` §8). WhatsApp only if a verified Meta business and approved templates are in place.
 6. **Before election day:** Lighthouse checks on a real Android phone (PWA installability, Performance ≥ 90), a disk-space check for photos, a database backup routine, and a switch of Data shown back to real results.
 7. **GitHub Actions:** CI can't run until the GitHub account's billing lock is cleared.
+
+## Candidate features not built yet
+
+Offered on 25 Sep; the owner chose the LGA map and correction review first. Still open:
+
+- Agents page with call links and a "silent PUs" list.
+- Clear the web app's rehearsal data; download a full backup (CSV zip).
+- Printable per-PU evidence pack for petitions; one-page situation report.
+- Change your own password; coordinators limited to their LGA.
+- Real LGA boundaries for the map (GRID3, CC BY 4.0) once `services3.arcgis.com` is allowed in the environment's network settings.
 
 ## Decisions still open
 

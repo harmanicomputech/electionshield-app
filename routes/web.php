@@ -7,6 +7,7 @@ use App\Http\Controllers\Console\BroadcastController;
 use App\Http\Controllers\Console\CollationController;
 use App\Http\Controllers\Console\CompareController;
 use App\Http\Controllers\Console\ContactController;
+use App\Http\Controllers\Console\CorrectionController;
 use App\Http\Controllers\Console\DashboardController;
 use App\Http\Controllers\Console\IncidentController;
 use App\Http\Controllers\Console\MonitorController;
@@ -59,6 +60,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/monitor', [MonitorController::class, 'index'])->name('monitor');
     Route::get('/monitor/{lga}', [MonitorController::class, 'lga'])->name('monitor.lga');
     Route::get('/monitor/{lga}/{ward}', [MonitorController::class, 'ward'])->name('monitor.ward');
+
+    Route::get('/corrections', [CorrectionController::class, 'index'])->name('corrections');
+    Route::post('/corrections/{reference}/approve', [CorrectionController::class, 'approve'])->name('corrections.approve');
+    Route::post('/corrections/{reference}/reject', [CorrectionController::class, 'reject'])->name('corrections.reject');
 
     Route::get('/incidents', [IncidentController::class, 'index'])->name('incidents');
     Route::post('/incidents/{incident:reference}/acknowledge', [IncidentController::class, 'acknowledge'])->name('incidents.acknowledge');

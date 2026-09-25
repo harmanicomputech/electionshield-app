@@ -7,7 +7,7 @@
   var meta = document.querySelector('meta[name="es-generated-at"]');
   var tz = (document.querySelector('meta[name="es-timezone"]') || {}).content || 'Africa/Lagos';
   var banner = document.querySelector('[data-offline-banner]');
-  var LIVE_PAGES = [/^\/$/, /^\/spread$/, /^\/collation(\/.*)?$/, /^\/monitor(\/.*)?$/, /^\/incidents$/, /^\/manage\/townhall\/[^/]+$/];
+  var LIVE_PAGES = [/^\/$/, /^\/spread$/, /^\/collation(\/.*)?$/, /^\/monitor(\/.*)?$/, /^\/incidents$/, /^\/corrections$/, /^\/manage\/townhall\/[^/]+$/];
   var QUEUE_KEY = 'es-queue';
   var REFRESH_MS = 60000;
 
@@ -514,7 +514,33 @@
     }, 20000);
   }
 
-  function bindMain() { bindRows(); bindGuide(); bindQueue(); bindFilters(); bindPhotos(); bindPush(); bindBroadcastForm(); bindTownHall(); }
+  // LGA map: switch layers without reloading (the links are the no-JS path).
+  function bindMaps() {
+    document.querySelectorAll('[data-lga-map]').forEach(function (map) {
+      map.querySelectorAll('[data-map-layer]').forEach(function (link) {
+        link.addEventListener('click', function (event) {
+          event.preventDefault();
+          var key = link.getAttribute('data-map-layer');
+          map.setAttribute('data-active', key);
+          map.querySelectorAll('[data-map-layer]').forEach(function (l) {
+            var on = l === link;
+            l.classList.toggle('on', on);
+            l.setAttribute('aria-selected', on ? 'true' : 'false');
+          });
+          map.querySelectorAll('.tile').forEach(function (tile) {
+            var cell = (safe(function () { return JSON.parse(tile.getAttribute('data-cells')); }) || {})[key];
+            if (!cell) { return; }
+            tile.className = 'tile ' + cell['class'];
+            tile.querySelector('[data-tile-value]').textContent = cell.value;
+            tile.title = tile.querySelector('.tile-name').textContent + ': ' + cell.title;
+          });
+          map.querySelectorAll('[data-map-legend]').forEach(function (legend) { legend.hidden = legend.getAttribute('data-map-legend') !== key; });
+        });
+      });
+    });
+  }
+
+  function bindMain() { bindRows(); bindGuide(); bindQueue(); bindFilters(); bindPhotos(); bindPush(); bindBroadcastForm(); bindTownHall(); bindMaps(); }
 
   // Install: Android/desktop Chrome prompt, and a Home Screen guide on iPhone.
   var deferred = null;

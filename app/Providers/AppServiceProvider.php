@@ -2,7 +2,9 @@
 
 namespace App\Providers;
 
+use App\Enums\ResultStatus;
 use App\Models\Incident;
+use App\Models\Result;
 use App\Models\SyncState;
 use App\Models\WebhookEvent;
 use App\Support\Settings;
@@ -25,6 +27,7 @@ class AppServiceProvider extends ServiceProvider
                 'showingRehearsal' => Settings::showingRehearsal(),
                 'lastData' => $this->lastDataReceived(),
                 'urgentOpen' => $this->urgentOpenIncidents(),
+                'pendingCorrections' => $this->pendingCorrections(),
             ]);
         });
     }
@@ -37,6 +40,20 @@ class AppServiceProvider extends ServiceProvider
         try {
             return auth()->check()
                 ? Incident::query()->where('rehearsal', Settings::showingRehearsal())->where('urgent', true)->withResponseStatus(Incident::OPEN)->count()
+                : 0;
+        } catch (Throwable) {
+            return 0;
+        }
+    }
+
+    /**
+     * Corrections waiting for review (the sidebar badge).
+     */
+    private function pendingCorrections(): int
+    {
+        try {
+            return auth()->check()
+                ? Result::query()->where('rehearsal', Settings::showingRehearsal())->where('status', ResultStatus::Pending)->whereNotNull('corrects_reference')->count()
                 : 0;
         } catch (Throwable) {
             return 0;

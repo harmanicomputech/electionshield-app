@@ -25,6 +25,8 @@
     @endforeach
 </nav>
 
+@include('partials.lga-map', ['map' => $map, 'title' => 'Where'])
+
 <form class="filters" method="get" action="{{ route('incidents') }}">
     <input type="hidden" name="status" value="{{ $status }}">
     <div>

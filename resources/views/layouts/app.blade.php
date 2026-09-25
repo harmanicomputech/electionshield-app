@@ -20,6 +20,8 @@
         'system' => 'M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3M18 3v4h-4M6 21v-4h4',
         'users' => 'M16 20v-2a4 4 0 0 0-8 0v2M12 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z',
         'audit' => 'M9 4h6l1 2h3v14H5V6h3l1-2Zm-1 8h8m-8 4h5',
+        'corrections' => 'M4 20h4L19 9l-4-4L4 16v4Zm9-13 4 4',
+        'map' => 'M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2Zm0 0v14m6-12v14',
         'push' => 'M6 16v-5a6 6 0 1 1 12 0v5l2 2H4l2-2Zm4 4h4',
         'install' => 'M12 3v12m-5-5 5 5 5-5M5 21h14',
         'logout' => 'M15 4h4v16h-4M10 8l-4 4 4 4M6 12h11',
@@ -29,6 +31,7 @@
             [$tabs[0][0], $tabs[0][1], $tabs[0][2], $tabs[0][3]],
             [$tabs[1][0], $tabs[1][1], $tabs[1][2], $tabs[1][3]],
             ['monitor', 'Polling units', $tabs[2][2], $tabs[2][3]],
+            ['corrections', 'Corrections', $icon['corrections'], ['corrections']],
         ]],
         ['Results', [
             ['collation', 'Collation', $icon['collation'], ['collation', 'collation.*']],
@@ -75,10 +78,11 @@
                 @foreach ($sections as [$heading, $items])
                     <p class="side-heading">{{ $heading }}</p>
                     @foreach ($items as [$name, $label, $path, $covers])
-                        <a href="{{ route($name) }}" class="{{ $active($covers) }}" @if ($active($covers)) aria-current="page" @endif @if ($name === 'incidents') data-live-id="side-incidents" @endif>
+                        <a href="{{ route($name) }}" class="{{ $active($covers) }}" @if ($active($covers)) aria-current="page" @endif @if (in_array($name, ['incidents', 'corrections'], true)) data-live-id="side-{{ $name }}" @endif>
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ $path }}"/></svg>
                             <span>{{ $label }}</span>
                             @if ($name === 'incidents' && $urgentOpen)<span class="count" aria-label="{{ $urgentOpen }} urgent open">{{ $urgentOpen }}</span>@endif
+                            @if ($name === 'corrections' && $pendingCorrections)<span class="count pending" aria-label="{{ $pendingCorrections }} waiting">{{ $pendingCorrections }}</span>@endif
                         </a>
                     @endforeach
                 @endforeach
@@ -114,6 +118,7 @@
                                 <a href="{{ route('broadcasts') }}">Broadcasts</a>
                                 <hr>
                             @endif
+                            <a href="{{ route('corrections') }}">Corrections{{ $pendingCorrections ? " ({$pendingCorrections})" : '' }}</a>
                             <a href="{{ route('push') }}">Notifications</a>
                             <button type="button" data-install hidden>Install app</button>
                             <form method="post" action="{{ route('logout') }}" data-logout>@csrf<input type="hidden" name="push_endpoint" data-push-endpoint><button type="submit">Log out ({{ $user->name }})</button></form>
@@ -170,6 +175,7 @@
                         <a href="{{ route('broadcasts') }}">Broadcasts</a>
                         <hr>
                     @endif
+                    <a href="{{ route('corrections') }}">Corrections{{ $pendingCorrections ? " ({$pendingCorrections})" : '' }}</a>
                     <a href="{{ route('townhall.manage') }}">Town hall</a>
                     <a href="{{ route('push') }}">Notifications</a>
                     <button type="button" data-install hidden>Install app</button>

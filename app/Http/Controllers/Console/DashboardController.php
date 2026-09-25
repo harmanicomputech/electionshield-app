@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Console;
 use App\Http\Controllers\Controller;
 use App\Models\Incident;
 use App\Services\Collation;
+use App\Services\LgaMap;
 use App\Services\PuMonitor;
 use App\Services\SpreadTracker;
 use App\Support\Settings;
@@ -28,6 +29,7 @@ class DashboardController extends Controller
             'tracker' => $tracker,
             'duplicates' => $collation->duplicateCount(),
             'field' => $monitor->total($monitor->units()),
+            'map' => (new LgaMap($rehearsal))->build(['share', 'results', 'checkin', 'incidents'], fn ($lga) => route('collation.lga', $lga)),
             'urgentOpen' => Incident::query()->where('rehearsal', $rehearsal)->where('urgent', true)->withResponseStatus(Incident::OPEN)->count(),
         ]);
     }

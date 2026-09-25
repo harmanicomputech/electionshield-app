@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Console;
 
 use App\Http\Controllers\Controller;
+use App\Services\LgaMap;
 use App\Services\PuMonitor;
 use App\Services\PuStatus;
 use App\Support\Settings;
@@ -21,6 +22,7 @@ class MonitorController extends Controller
         $units = $monitor->units();
 
         return view('monitor.index', [
+            'map' => (new LgaMap(Settings::showingRehearsal()))->build(['checkin', 'results', 'incidents'], fn ($lga) => route('monitor.lga', $lga)),
             'total' => $monitor->total($units),
             'areas' => $monitor->tally($units, fn (PuStatus $unit) => $unit->lga),
         ]);
