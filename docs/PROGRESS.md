@@ -83,7 +83,7 @@ All offered features are built. Still possible later:
 
 ## Decisions still open
 
-- **IReV automatic fetching:** INEC publishes no official API; IReV's own data feed is undocumented and was blocked from the build environment. To build a fetcher that pulls each PU's sheet by itself, allow `inecelectionresults.ng` and `*.execute-api.eu-west-2.amazonaws.com` in the Claude environment's network settings so the feed can be studied. Until then, sheets are read by AI from an upload or a pasted IReV link.
+- **IReV automatic fetching (built, needs a live test):** the watcher follows IReV's data feed at `dolphin-app-sleqh.ondigitalocean.app` (learned from the open-source OpenBallot IReV scraper, as the feed was blocked from the build environment). Two things can only be confirmed on your server: that the feed answers it, and that IReV's image store (`inc-s3-cache.incportals.com`) lets it download sheets (it refused other outside servers). Test it by following a past Ebonyi election on the IReV page; if downloads show "IReV refused the download", the sheets' links are listed for a person to open and enter. Our PU register must be INEC's real one for automatic matching to work.
 
 - **Check the register data.** The bundled CSV (the same file as the USSD service's) totals 4,592,490 registered voters, about three times INEC's 2023 figure for Ebonyi (about 1.6 million), and its PU names look generic ("Open Space 001"). Turnout is worked out from these figures. If it is a placeholder, replace it with INEC's register on the System page (and in the USSD service); if not, confirm it.
 

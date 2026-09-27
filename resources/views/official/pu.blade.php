@@ -68,6 +68,9 @@
     <h2>{{ $official ? 'IReV result' : 'Enter the IReV result' }}</h2>
     @if ($official)<p class="small muted">Last saved by {{ $official->entered_by }}, {{ \App\Support\Time::local($official->updated_at, 'j M, g:i A') }} ({{ $official->source }}).@if ($official->sheet_path) <a href="{{ route('official.pu.sheet', $unit->code) }}" target="_blank" rel="noopener">View the sheet it was read from</a> (SHA-256 {{ \Illuminate\Support\Str::limit($official->sheet_sha256, 16, '…') }}).@endif</p>@endif
     <p class="small muted">Type the figures exactly as on the result sheet in IReV. Our agent's figures are shown only after saving, so they can't sway the entry.</p>
+@if ($official?->needs_check)
+    <div class="flash warn" role="status"><b>Fetched from IReV automatically and read by AI: not yet checked.</b> Open <a href="{{ route('official.pu.sheet', $unit->code) }}" target="_blank" rel="noopener">the sheet</a>, compare every figure below, correct any that differ, and press Save to mark it checked.</div>
+@endif
 @can('manage_official_results')
     <details class="ai-read" @if (! $official && ! $reading) open @endif>
         <summary><b>✨ Read the sheet with AI</b> <span class="muted small">Upload the IReV sheet (or paste its link) and the figures are filled in below for you to check.</span></summary>

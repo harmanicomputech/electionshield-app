@@ -16,12 +16,12 @@ class OfficialResult extends Model
 
     protected $fillable = [
         'polling_unit_code', 'lga', 'ward', 'irev_status', 'accredited_voters', 'votes',
-        'rejected_votes', 'source', 'note', 'entered_by', 'sheet_path', 'sheet_sha256',
+        'rejected_votes', 'source', 'note', 'entered_by', 'sheet_path', 'sheet_sha256', 'needs_check', 'irev_document_url',
     ];
 
     protected function casts(): array
     {
-        return ['votes' => 'array'];
+        return ['votes' => 'array', 'needs_check' => 'boolean'];
     }
 
     public function pollingUnit(): BelongsTo

@@ -23,14 +23,15 @@
 </section>
 
 <section class="card">
-    <h2>Recently entered</h2>
+    <h2>{{ $onlyUnchecked ? 'Fetched from IReV, not yet checked' : 'Recently entered' }}</h2>
+    @if ($uncheckedCount && ! $onlyUnchecked)<p class="small"><span class="badge warn">{{ number_format($uncheckedCount) }} not yet checked</span> <a href="{{ route('official', ['unchecked' => 1]) }}">show them</a></p>@endif
     @if ($recent->isEmpty())
-        <p class="muted">Nothing entered yet.</p>
+        <p class="muted">{{ $onlyUnchecked ? 'Everything fetched has been checked.' : 'Nothing entered yet.' }}</p>
     @else
         <ul class="list">
             @foreach ($recent as $row)
                 <li class="item">
-                    <h3><a class="rowlink" href="{{ route('official.pu', $row->polling_unit_code) }}">{{ $row->pollingUnit?->name ?? 'PU '.$row->polling_unit_code }}</a></h3>
+                    <h3><a class="rowlink" href="{{ route('official.pu', $row->polling_unit_code) }}">{{ $row->pollingUnit?->name ?? 'PU '.$row->polling_unit_code }}</a> @if ($row->needs_check)<span class="badge warn">Not yet checked</span>@endif</h3>
                     <div class="meta">{{ $row->lga }} › {{ $row->ward }} · {{ $row->uploaded() ? number_format($row->totalValidVotes()).' valid votes' : 'No upload on IReV' }} · {{ $row->entered_by }}, {{ \App\Support\Time::local($row->updated_at, 'j M, g:i A') }}</div>
                 </li>
             @endforeach

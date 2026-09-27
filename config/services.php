@@ -88,7 +88,9 @@ return [
 
     // Hosts the server may download IReV result sheets from (a pasted link).
     'irev' => [
-        'document_hosts' => array_values(array_filter(array_map('trim', explode(',', (string) env('IREV_DOCUMENT_HOSTS', 'inecelectionresults.ng,inecelectionresults.net,amazonaws.com,cloudfront.net'))))),
+        // IReV's data feed (the routes its own web page uses; INEC has no official API).
+        'api_url' => env('IREV_API_URL', 'https://dolphin-app-sleqh.ondigitalocean.app/api/v1'),
+        'document_hosts' => array_values(array_filter(array_map('trim', explode(',', (string) env('IREV_DOCUMENT_HOSTS', 'inecelectionresults.ng,inecelectionresults.net,incportals.com,amazonaws.com,cloudfront.net'))))),
     ],
 
 ];

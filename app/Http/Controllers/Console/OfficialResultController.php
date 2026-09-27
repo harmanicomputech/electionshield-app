@@ -34,8 +34,12 @@ class OfficialResultController extends Controller
                 : back()->with('error', "No polling unit {$request->query('code')} in the register.");
         }
 
+        $unchecked = $request->boolean('unchecked');
+
         return view('official.index', [
-            'recent' => OfficialResult::query()->with('pollingUnit:code,name')->latest('updated_at')->limit(20)->get(),
+            'recent' => OfficialResult::query()->with('pollingUnit:code,name')->when($unchecked, fn ($query) => $query->where('needs_check', true))->latest('updated_at')->limit($unchecked ? 200 : 20)->get(),
+            'onlyUnchecked' => $unchecked,
+            'uncheckedCount' => OfficialResult::query()->where('needs_check', true)->count(),
             'entered' => OfficialResult::query()->where('irev_status', OfficialResult::UPLOADED)->count(),
             'notUploaded' => OfficialResult::query()->where('irev_status', OfficialResult::NOT_UPLOADED)->count(),
             'units' => PollingUnit::query()->count(),
@@ -75,6 +79,8 @@ class OfficialResultController extends Controller
         $sheet = filled($validated['sheet'] ?? null) && str_starts_with($validated['sheet'], "irev/{$unit->code}/") && Storage::disk('local')->exists($validated['sheet'])
             ? $validated['sheet'] : null;
 
+        $before = OfficialResult::query()->where('polling_unit_code', $unit->code)->first();
+
         $official = OfficialResult::updateOrCreate(['polling_unit_code' => $unit->code], [
             'lga' => $unit->lga,
             'ward' => $unit->ward,
@@ -82,7 +88,8 @@ class OfficialResultController extends Controller
             'accredited_voters' => $validated['accredited_voters'] ?? null,
             'votes' => $uploaded ? array_map('intval', $validated['votes']) : null,
             'rejected_votes' => $validated['rejected_votes'] ?? null,
-            'source' => $sheet ? 'ai-read, checked' : 'manual',
+            'source' => $sheet ? 'ai-read, checked' : (str_starts_with((string) $before?->source, 'irev') ? 'irev, checked' : 'manual'),
+            'needs_check' => false,
             ...($sheet ? ['sheet_path' => $sheet, 'sheet_sha256' => hash('sha256', Storage::disk('local')->get($sheet))] : []),
             'note' => $validated['note'] ?? null,
             'entered_by' => $request->user()->name,

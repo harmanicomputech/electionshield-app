@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Services\Irev\IrevWatcher;
 use App\Services\UssdSync;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
@@ -106,6 +107,28 @@ class BackgroundRunner
                 Settings::set('runner.ussd-sync', $slot);
                 $this->attempt(fn () => Artisan::call('ussd:sync'));
             }
+        }
+
+        $this->watchIrev();
+    }
+
+    /**
+     * IReV watching (when switched on), once per 2-minute slot.
+     */
+    private function watchIrev(): void
+    {
+        $watcher = app(IrevWatcher::class);
+
+        if (! $watcher->automatic()) {
+            return;
+        }
+
+        $now = now();
+        $slot = $now->format('Y-m-d H:').str_pad((string) (intdiv((int) $now->format('i'), 2) * 2), 2, '0', STR_PAD_LEFT);
+
+        if (Settings::get('runner.irev') !== $slot) {
+            Settings::set('runner.irev', $slot);
+            $this->attempt(fn () => $watcher->step());
         }
     }
 

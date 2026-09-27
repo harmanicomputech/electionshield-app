@@ -480,3 +480,8 @@ input[type=file]::file-selector-button { min-height: 44px; padding: 0 16px; marg
 .ai-read { border: 1px dashed var(--line); border-radius: 10px; padding: 10px 12px; margin: 0 0 12px; }
 .ai-read summary { cursor: pointer; }
 .ai-read summary .muted { display: block; }
+.irev-counts { list-style: none; padding: 0; margin: 0 0 12px; }
+.irev-counts a { display: flex; justify-content: space-between; gap: 8px; padding: 8px 10px; border-radius: 8px; text-decoration: none; color: var(--text); }
+.irev-counts a:hover, .irev-counts a.on { background: var(--surface-2); }
+.inline-form { display: flex; gap: 6px; }
+.inline-form input { min-width: 0; }

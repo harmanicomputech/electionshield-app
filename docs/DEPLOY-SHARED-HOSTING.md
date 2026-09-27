@@ -96,6 +96,10 @@ On phones: open the site in Chrome and press **Install app** (Android), or in Sa
 
 Agents can attach videos of up to 100 MB. The package's `public_html/.user.ini` asks PHP for a 128 MB upload limit; the System page shows the limit actually in force. If it is lower, raise `upload_max_filesize` and `post_max_size` in DirectAdmin → PHP settings (or ask the host). Videos use disk space quickly: a 50 MB clip per incident × 500 incidents is 25 GB, so check your plan.
 
+## IReV, fetched automatically
+
+On **Official vs PVT → IReV (automatic)**, press **Find the election on IReV**, choose the Ebonyi governorship (or a past Ebonyi election for a rehearsal) and press **Check now**. From then on, new sheets are fetched every couple of minutes while the cron-job.org pinger runs. Reading them needs `ANTHROPIC_API_KEY` (below); without it, the sheets are downloaded for a person to enter. About 3,300 sheets cost roughly US$30–100 of API credit to read. If the page reports "IReV refused the download", IReV's image store is not serving your server: the list then links each sheet on IReV for a person to open.
+
 ## Reading IReV sheets with AI (optional)
 
 Create an API key at console.anthropic.com, put it in `.env` as `ANTHROPIC_API_KEY=`, and the **Read the sheet with AI** box appears on each PU's official result page. Reading one sheet costs about 1–3 US cents.

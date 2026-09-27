@@ -11,6 +11,9 @@
 @include('partials.results-tabs')
 @include('partials.official-tabs')
 @include('partials.compare-summary')
+@if ($unchecked = \App\Models\OfficialResult::query()->where('needs_check', true)->count())
+    <div class="flash warn small">{{ number_format($unchecked) }} IReV {{ $unchecked === 1 ? 'result was' : 'results were' }} read by AI and {{ $unchecked === 1 ? 'is' : 'are' }} not yet checked by a person: treat a difference there as provisional until checked. <a href="{{ route('official', ['unchecked' => 1]) }}">Check them</a></div>
+@endif
 
 <section class="card flush">
     <h2>LGA collations (EC8C)</h2>
