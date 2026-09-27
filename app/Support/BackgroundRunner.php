@@ -6,6 +6,7 @@ use App\Services\Irev\IrevWatcher;
 use App\Services\UssdSync;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Schema;
 use Throwable;
 
 /**
@@ -63,6 +64,15 @@ class BackgroundRunner
      */
     public function run(int $queueSeconds = 20, string $source = 'cron'): bool
     {
+        // Nothing to do until the first admin has set up the database.
+        try {
+            if (! Schema::hasTable('settings')) {
+                return false;
+            }
+        } catch (Throwable) {
+            return false;
+        }
+
         $lock = Cache::lock('election-shield-web:runner', $queueSeconds + 120);
 
         if (! $lock->get()) {

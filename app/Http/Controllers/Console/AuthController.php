@@ -31,10 +31,9 @@ class AuthController extends Controller
 {
     public function show(): View|RedirectResponse
     {
-        if (Auth::check()) {
-            return redirect()->route('dashboard');
-        }
-
+        // Database and first admin first: before set-up there is no users
+        // table, and a "keep me logged in" cookie from an earlier install
+        // must not break this page.
         if (! $this->databaseReachable()) {
             return view('auth.login', ['mode' => 'no-database']);
         }
@@ -43,6 +42,10 @@ class AuthController extends Controller
             abort_if(blank(config('election.admin_password')), 404);
 
             return view('auth.login', ['mode' => 'setup']);
+        }
+
+        if (Auth::check()) {
+            return redirect()->route('dashboard');
         }
 
         return view('auth.login', ['mode' => 'login']);

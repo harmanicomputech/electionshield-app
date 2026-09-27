@@ -1,10 +1,13 @@
 <?php
 
 use App\Http\Middleware\RunBackgroundWork;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Schema;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -25,4 +28,22 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
+
+        // Not set up yet (empty database): send people to the set-up page
+        // instead of an error, and drop any login cookie from an earlier install.
+        $exceptions->render(function (QueryException $e, Request $request) {
+            if ($request->expectsJson() || $request->is('api/*', 'login', 'setup')) {
+                return null;
+            }
+
+            try {
+                if (Schema::hasTable('users')) {
+                    return null;
+                }
+            } catch (Throwable) {
+                return null;
+            }
+
+            return redirect('/login')->withCookie(cookie()->forget(Auth::guard('web')->getRecallerName()));
+        });
     })->create();
