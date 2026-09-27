@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Console;
 
 use App\Enums\ResultStatus;
 use App\Http\Controllers\Controller;
+use App\Models\Attachment;
 use App\Models\Ec8aPhoto;
 use App\Models\Incident;
 use App\Models\MaterialReport;
@@ -44,6 +45,7 @@ class ReportController extends Controller
             'flags' => $comparison['flags'] ?? [],
             'history' => $history,
             'photos' => Ec8aPhoto::query()->whereIn('result_reference', $history->pluck('reference'))->orderBy('created_at')->get(),
+            'attachments' => Attachment::query()->whereIn('reference', $history->pluck('reference')->merge(Incident::query()->where('polling_unit_code', $unit->code)->pluck('reference')))->orderBy('created_at')->get(),
             'incidents' => Incident::query()->where('polling_unit_code', $unit->code)->where('rehearsal', $rehearsal)->orderBy('reported_at')->get(),
             'presence' => Presence::query()->where('polling_unit_code', $unit->code)->where('rehearsal', $rehearsal)->orderBy('confirmed_at')->first(),
             'materials' => MaterialReport::query()->where('polling_unit_code', $unit->code)->where('rehearsal', $rehearsal)->orderBy('reported_at')->get(),

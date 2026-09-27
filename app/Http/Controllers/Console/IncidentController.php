@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Console;
 
 use App\Http\Controllers\Controller;
+use App\Models\Attachment;
 use App\Models\Incident;
 use App\Services\LgaMap;
 use App\Support\Audit;
@@ -56,6 +57,7 @@ class IncidentController extends Controller
         return view('incidents.index', [
             'map' => (new LgaMap(Settings::showingRehearsal()))->build(['incidents'], fn ($lga) => route('incidents', ['lga' => $lga, 'status' => $status])),
             'incidents' => $incidents,
+            'media' => Attachment::query()->whereIn('reference', collect($incidents->items())->pluck('reference'))->get()->groupBy('reference'),
             'status' => $status,
             'counts' => [
                 Incident::OPEN => (clone $base)->withResponseStatus(Incident::OPEN)->count(),

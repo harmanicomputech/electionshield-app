@@ -65,6 +65,7 @@
                 @if ($incident->urgent)<span class="badge bad">⚠ Urgent</span>@endif
                 <span class="badge">{{ $incident->label() }}</span>
                 <span class="badge {{ $badgeClass }}">{{ $badgeText }}</span>
+                <span class="badge {{ $incident->channel === 'web' ? 'channel-web' : '' }}">via {{ $incident->channelLabel() }}</span>
             </div>
             <h3>{{ $incident->pollingUnit?->name ?? 'PU '.$incident->polling_unit_code }}</h3>
             <div class="meta">
@@ -74,6 +75,7 @@
                 {{ $incident->reference }} · {{ \App\Support\Time::local($incident->reported_at, 'j M, g:i A') }}
             </div>
             @if ($incident->note)<p class="note">{{ $incident->note }}</p>@endif
+            @include('partials.media-strip', ['files' => $media[$incident->reference] ?? collect()])
             <div class="meta">Reported by {{ $incident->agent_name ?? 'an agent' }}@if ($incident->agent_phone && auth()->user()->can('view_agents')) · <a class="tel" href="tel:{{ $incident->agent_phone }}">Call {{ $incident->agent_phone }}</a>@endif</div>
 
             @if ($incident->acknowledged_at)

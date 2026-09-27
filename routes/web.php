@@ -4,6 +4,7 @@ use App\Http\Controllers\AgentUploadController;
 use App\Http\Controllers\Console\AccountController;
 use App\Http\Controllers\Console\AgentAccountController;
 use App\Http\Controllers\Console\AgentController;
+use App\Http\Controllers\Console\AlertController;
 use App\Http\Controllers\Console\AuditController;
 use App\Http\Controllers\Console\AuthController;
 use App\Http\Controllers\Console\BroadcastController;
@@ -13,6 +14,7 @@ use App\Http\Controllers\Console\ContactController;
 use App\Http\Controllers\Console\CorrectionController;
 use App\Http\Controllers\Console\DashboardController;
 use App\Http\Controllers\Console\IncidentController;
+use App\Http\Controllers\Console\MediaController;
 use App\Http\Controllers\Console\MonitorController;
 use App\Http\Controllers\Console\OfficialCollationController;
 use App\Http\Controllers\Console\OfficialImportController;
@@ -61,6 +63,9 @@ Route::middleware('auth')->group(function () {
     Route::put('/account', [AccountController::class, 'update'])->name('account.update');
     Route::put('/account/password', [AccountController::class, 'password'])->middleware('throttle:10,1')->name('account.password');
 
+    // Photo and video files: staff, or the agent who sent them (checked in the controller).
+    Route::get('/media/{attachment}/file', [MediaController::class, 'file'])->name('media.file');
+
     Route::get('/notifications', [PushController::class, 'show'])->name('push');
     Route::post('/push/subscribe', [PushController::class, 'subscribe'])->name('push.subscribe');
     Route::post('/push/unsubscribe', [PushController::class, 'unsubscribe'])->name('push.unsubscribe');
@@ -100,6 +105,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/photos', [PhotoController::class, 'index'])->name('photos');
         Route::get('/photos/{photo}', [PhotoController::class, 'show'])->name('photos.show');
         Route::get('/photos/{photo}/image/{size?}', [PhotoController::class, 'image'])->whereIn('size', ['thumb'])->name('photos.image');
+        Route::get('/media', [MediaController::class, 'index'])->name('media');
 
         // Official results (IReV per PU, declared EC8B/EC8C) and the comparison.
         Route::get('/compare', [CompareController::class, 'index'])->name('compare');
@@ -113,6 +119,11 @@ Route::middleware('auth')->group(function () {
         Route::post('/corrections/{reference}/approve', [CorrectionController::class, 'approve'])->name('corrections.approve');
         Route::post('/corrections/{reference}/reject', [CorrectionController::class, 'reject'])->name('corrections.reject');
     });
+
+    // Pop-ups for new results and incidents (what each person gets follows their permissions).
+    Route::get('/alerts', [AlertController::class, 'index'])->name('alerts');
+    Route::post('/alerts/snooze', [AlertController::class, 'snooze'])->name('alerts.snooze');
+    Route::post('/results/{reference}/acknowledge', [AlertController::class, 'acknowledgeResult'])->middleware('can:'.Permission::ACKNOWLEDGE_RESULTS)->name('results.acknowledge');
 
     Route::get('/incidents', [IncidentController::class, 'index'])->middleware('can:'.Permission::VIEW_INCIDENTS)->name('incidents');
     Route::middleware('can:'.Permission::RESPOND_INCIDENTS)->group(function () {
@@ -130,10 +141,12 @@ Route::middleware('auth')->group(function () {
     Route::middleware('can:'.Permission::REVIEW_MEDIA)->group(function () {
         Route::post('/photos', [PhotoController::class, 'store'])->middleware('throttle:30,1')->name('photos.store');
         Route::post('/photos/{photo}/review', [PhotoController::class, 'review'])->name('photos.review');
+        Route::post('/media/{attachment}/review', [MediaController::class, 'review'])->name('media.review');
     });
 
     Route::middleware('can:'.Permission::DELETE_EVIDENCE)->group(function () {
         Route::delete('/photos/{photo}', [PhotoController::class, 'destroy'])->name('photos.destroy');
+        Route::delete('/media/{attachment}', [MediaController::class, 'destroy'])->name('media.destroy');
         Route::delete('/official/pu/{code}', [OfficialResultController::class, 'destroy'])->name('official.pu.destroy');
     });
 

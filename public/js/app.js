@@ -764,6 +764,144 @@
       });
     }
   }
+
+  /*
+   * Situation-room pop-ups: new results and incidents nobody has answered,
+   * fetched every 20 seconds. Acknowledge / resolve answer for everyone;
+   * "Remind me" and closing the pop-up snooze it for this person only, and
+   * an unanswered report comes back after the repeat interval.
+   */
+  var alertBox = document.querySelector('[data-alert-pop]');
+  var alertUrl = body.getAttribute('data-alerts');
+  var snoozeUrl = body.getAttribute('data-snooze-url');
+  var alertItems = [];
+  var alertRepeat = 5;
+  var alertHidden = {};
+  var alertSeen = {};
+  var baseTitle = document.title;
+
+  function esc(text) { return String(text == null ? '' : text).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+
+  function postJson(url, data) {
+    return fetch(url, { method: 'POST', credentials: 'same-origin', headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf || '', 'X-Requested-With': 'XMLHttpRequest' }, body: JSON.stringify(data || {}) });
+  }
+
+  function chime(urgent) {
+    safe(function () { if (navigator.vibrate) { navigator.vibrate(urgent ? [300, 120, 300, 120, 300] : [150]); } });
+    safe(function () {
+      var Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) { return; }
+      var ctx = new Ctx();
+      [0, urgent ? 0.25 : null].forEach(function (at) {
+        if (at === null) { return; }
+        var osc = ctx.createOscillator();
+        var gain = ctx.createGain();
+        osc.frequency.value = urgent ? 880 : 660;
+        gain.gain.setValueAtTime(0.0001, ctx.currentTime + at);
+        gain.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime + at + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + at + 0.2);
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.start(ctx.currentTime + at); osc.stop(ctx.currentTime + at + 0.22);
+      });
+    });
+  }
+
+  function visibleAlerts() {
+    var now = Date.now();
+    return alertItems.filter(function (item) { return !(alertHidden[item.reference] > now); });
+  }
+
+  function renderAlert() {
+    if (!alertBox) { return; }
+    var items = visibleAlerts();
+    document.title = items.length ? '(' + items.length + ') ' + baseTitle : baseTitle;
+    if (!items.length) { alertBox.hidden = true; alertBox.innerHTML = ''; return; }
+    var item = items[0];
+    var fresh = !alertSeen[item.reference];
+    alertSeen[item.reference] = true;
+
+    var details = '';
+    if (item.kind === 'result') {
+      var votes = Object.keys(item.votes || {}).map(function (party) { return '<span><b>' + esc(party) + '</b> ' + Number(item.votes[party]).toLocaleString() + '</span>'; }).join('');
+      details = '<div class="pop-votes">' + votes + '</div><p class="small muted">Accredited ' + Number(item.accredited).toLocaleString() + ' · rejected ' + Number(item.rejected).toLocaleString() + '</p>';
+    } else if (item.note) {
+      details = '<p class="pop-note">“' + esc(item.note) + '”</p>';
+    }
+
+    alertBox.className = 'alert-pop' + (item.urgent ? ' urgent' : '') + (item.kind === 'result' ? ' result' : '');
+    alertBox.innerHTML =
+      '<header><span class="pop-kind">' + esc(item.heading) + '</span><span class="pop-count">' + (items.length > 1 ? '1 of ' + items.length : '') + '</span>' +
+      '<button type="button" class="pop-close" data-pop="close" aria-label="Close (comes back in ' + alertRepeat + ' minutes)">✕</button></header>' +
+      '<h2 id="alert-pop-title">' + esc(item.title) + '</h2>' +
+      '<p class="pop-place"><b>' + esc(item.place) + '</b><br><span class="small muted">' + esc([item.lga, item.ward].filter(Boolean).join(' › ')) + ' · PU ' + esc(item.code) + ' · ' + esc(item.reference) + '</span></p>' +
+      details +
+      '<p class="pop-agent small"><span class="badge ' + (item.channel === 'Web app' ? 'channel-web' : '') + '">via ' + esc(item.channel) + '</span> ' +
+        esc(item.agent || 'Agent') + (item.phone ? ' · <a href="tel:' + esc(item.phone) + '">' + esc(item.phone) + '</a>' : '') + (item.when ? ' · ' + esc(item.when) : '') +
+        (item.media ? ' · 📎 ' + item.media + ' file' + (item.media > 1 ? 's' : '') : '') + '</p>' +
+      '<div class="pop-resolve" data-pop-resolve hidden><label for="pop-note">What was done (optional)</label><textarea id="pop-note" maxlength="1000" rows="2"></textarea></div>' +
+      '<div class="pop-actions">' +
+        '<button type="button" class="button" data-pop="ack">Acknowledge</button>' +
+        (item.kind === 'incident' ? '<button type="button" class="button secondary" data-pop="resolve">Resolve…</button>' : '') +
+        (item.review ? '<a class="button secondary" href="' + esc(item.review) + '">Review</a>' : '<a class="button secondary" href="' + esc(item.open) + '">Open</a>') +
+        '<label class="pop-remind"><span class="sr-only">Remind me in</span><select data-pop="remind"><option value="">Remind me…</option><option value="5">in 5 min</option><option value="15">in 15 min</option><option value="30">in 30 min</option><option value="60">in 1 hour</option></select></label>' +
+      '</div><p class="pop-state small" data-pop-state aria-live="polite"></p>';
+    alertBox.hidden = false;
+    if (fresh) { chime(item.urgent); }
+
+    var state = alertBox.querySelector('[data-pop-state]');
+    var done = function (message) {
+      alertItems = alertItems.filter(function (i) { return i.reference !== item.reference; });
+      if (message) { showQueue(message); setTimeout(function () { showQueue(); }, 3000); }
+      renderAlert();
+    };
+    var fail = function () { state.textContent = navigator.onLine ? 'Could not save: try again.' : 'Offline: try again when you are back online.'; };
+    var snooze = function (minutes) {
+      alertHidden[item.reference] = Date.now() + minutes * 60000;
+      postJson(snoozeUrl, { reference: item.reference, minutes: minutes }).catch(function () {});
+      renderAlert();
+    };
+
+    alertBox.querySelector('[data-pop="close"]').addEventListener('click', function () { snooze(alertRepeat); });
+    alertBox.querySelector('[data-pop="ack"]').addEventListener('click', function () {
+      state.textContent = 'Saving…';
+      postJson(item.acknowledge).then(function (r) { if (!r.ok) { throw new Error(); } done('Acknowledged ' + item.reference + ' ✓'); refresh(true); }).catch(fail);
+    });
+    var resolve = alertBox.querySelector('[data-pop="resolve"]');
+    if (resolve) {
+      resolve.addEventListener('click', function () {
+        var box = alertBox.querySelector('[data-pop-resolve]');
+        if (box.hidden) { box.hidden = false; resolve.textContent = 'Mark resolved'; box.querySelector('textarea').focus(); return; }
+        state.textContent = 'Saving…';
+        postJson(item.resolve, { resolution_note: box.querySelector('textarea').value }).then(function (r) { if (!r.ok) { throw new Error(); } done('Resolved ' + item.reference + ' ✓'); refresh(true); }).catch(fail);
+      });
+    }
+    alertBox.querySelector('[data-pop="remind"]').addEventListener('change', function (event) {
+      var minutes = parseInt(event.target.value, 10);
+      if (minutes) { snooze(minutes); }
+    });
+  }
+
+  function pollAlerts() {
+    if (!alertUrl || !alertBox || !navigator.onLine) { return; }
+    fetch(alertUrl, { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
+      .then(function (r) { if (!r.ok) { throw new Error(); } return r.json(); })
+      .then(function (data) {
+        alertRepeat = data.repeat_minutes || 5;
+        alertItems = data.items || [];
+        // Don't swap the pop-up from under someone typing a resolution note.
+        if (alertBox.contains(document.activeElement) && document.activeElement.tagName === 'TEXTAREA') { return; }
+        renderAlert();
+      })
+      .catch(function () {});
+  }
+
+  if (alertUrl) {
+    pollAlerts();
+    setInterval(pollAlerts, 20000);
+    setInterval(renderAlert, 30000);
+    document.addEventListener('visibilitychange', function () { if (!document.hidden) { pollAlerts(); } });
+  }
+
   bindMain();
   showQueue();
   flushQueue();

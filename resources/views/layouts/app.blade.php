@@ -48,7 +48,7 @@
             ['collation', 'Collation', $icon['collation'], ['collation', 'collation.*'], \App\Support\Permission::VIEW_DASHBOARDS],
             ['spread', '25% rule', $icon['spread'], ['spread'], \App\Support\Permission::VIEW_DASHBOARDS],
             ['compare', 'Official vs PVT', $icon['compare'], ['compare', 'compare.*', 'official', 'official.*'], \App\Support\Permission::VIEW_DASHBOARDS],
-            ['photos', 'Photos & videos', $icon['photos'], ['photos', 'photos.*', 'media.*'], \App\Support\Permission::VIEW_DASHBOARDS],
+            ['photos', 'Photos & videos', $icon['photos'], ['photos', 'photos.*', 'media'], \App\Support\Permission::VIEW_DASHBOARDS],
             ['sitrep', 'Situation report', $icon['sitrep'], ['sitrep', 'evidence'], \App\Support\Permission::VIEW_DASHBOARDS],
         ],
         'Engage' => [
@@ -97,7 +97,7 @@
     <link rel="stylesheet" href="/css/app.css?v={{ filemtime(public_path('css/app.css')) }}">
     <script src="/js/app.js?v={{ filemtime(public_path('js/app.js')) }}" defer></script>
 </head>
-<body @class(['has-sidebar' => $user]) @if ($user) data-cache-pages="1" @endif>
+<body @class(['has-sidebar' => $user]) @if ($user) data-cache-pages="1" @endif @if ($user && ($user->can('respond_incidents') || $user->can('acknowledge_results'))) data-alerts="{{ route('alerts') }}" data-snooze-url="{{ route('alerts.snooze') }}" @endif>
     @if ($user)
         <aside class="sidebar" aria-label="Main">
             <a class="side-brand" href="{{ route($user->homeRoute()) }}"><img src="/icons/icon-192.png" alt="" width="36" height="36"><span>Election Shield<small>Ebonyi {{ \Illuminate\Support\Carbon::parse(config('election.date'))->format('Y') }}</small></span></a>
@@ -169,6 +169,7 @@
     </main>
 
     @if ($user)
+        <section class="alert-pop" data-alert-pop hidden role="alertdialog" aria-live="assertive" aria-labelledby="alert-pop-title"></section>
         <nav class="tabbar" aria-label="Main">
             @foreach ($tabs as [$name, $label, $path, $covers])
                 <a href="{{ route($name) }}" class="{{ $active($covers) }}" data-live-id="tab-{{ $name }}" @if ($active($covers)) aria-current="page" @endif>

@@ -96,6 +96,22 @@
         </ul>
     </section>
 
-    <p class="small muted report-foot">Source: Election Shield. Our figures come from the party's polling agent by USSD, each with its reference; IReV figures were copied from INEC's results portal. A photo's SHA-256 lets anyone confirm the file is the one received.</p>
+    @if ($attachments->isNotEmpty())
+        <section class="report-section">
+            <h2>5. Other photos and videos</h2>
+            @foreach ($attachments as $file)
+                @if ($file->isVideo())
+                    <p class="small">Video for {{ $file->reference }} · {{ $file->sizeLabel() }} · sent by {{ $file->uploaded_by ?? 'the agent' }}, {{ \App\Support\Time::local($file->created_at, 'j M Y, g:i A') }} · <a href="{{ route('media.file', $file) }}">open</a><br>SHA-256: <code>{{ $file->sha256 }}</code></p>
+                @else
+                    <figure class="report-photo">
+                        <img src="{{ route('media.file', $file) }}" alt="Photo for {{ $file->reference }}" loading="eager">
+                        <figcaption class="small">{{ $file->reference }} · sent by {{ $file->uploaded_by ?? 'the agent' }}, {{ \App\Support\Time::local($file->created_at, 'j M Y, g:i A') }}<br>SHA-256: <code>{{ $file->sha256 }}</code></figcaption>
+                    </figure>
+                @endif
+            @endforeach
+        </section>
+    @endif
+
+    <p class="small muted report-foot">Source: Election Shield. Our figures come from the party's polling agent by USSD or the web app, each with its reference; IReV figures were copied from INEC's results portal. A photo's SHA-256 lets anyone confirm the file is the one received.</p>
 </div>
 @endsection
