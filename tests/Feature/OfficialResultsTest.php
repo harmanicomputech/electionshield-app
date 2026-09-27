@@ -169,15 +169,20 @@ class OfficialResultsTest extends TestCase
         $this->assertTrue(AuditLog::where('action', 'compare.export')->exists());
     }
 
-    public function test_coordinators_enter_results_but_cannot_import_export_or_delete(): void
+    public function test_coordinators_enter_and_import_results_but_cannot_export_or_delete(): void
     {
         $this->actingAs(User::factory()->create());
         $this->enter('21202633001', ['APC' => 610, 'PDP' => 402, 'LP' => 95, 'OTHERS' => 18]);
 
-        $this->get('/official/import')->assertForbidden();
+        $this->get('/official/import')->assertOk();
         $this->get('/compare/export')->assertForbidden();
         $this->delete('/official/pu/21202633001')->assertForbidden();
+        $this->get('/official')->assertOk()->assertSee('Import CSV');
+
+        // Observers can look but not enter.
+        $this->actingAs(User::factory()->role('observer')->create());
         $this->get('/official')->assertOk()->assertDontSee('Import CSV');
+        $this->put('/official/pu/21202633001', [])->assertForbidden();
         $this->get('/official?code=EB/212/02633/001')->assertRedirect('/official/pu/21202633001');
     }
 }

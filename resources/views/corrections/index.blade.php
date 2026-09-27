@@ -49,6 +49,7 @@
                 </tbody>
             </table>
 
+@can('review_corrections')
             <div class="actions" style="margin-top:10px">
                 <form method="post" action="{{ route('corrections.approve', $correction->reference) }}" data-queue="Approve {{ $correction->reference }}">
                     @csrf
@@ -65,6 +66,7 @@
                     </form>
                 </details>
             </div>
+@endcan
             <div class="queue-state" data-queue-state aria-live="polite"></div>
             @if ($photo = \App\Models\Ec8aPhoto::query()->whereIn('result_reference', [$correction->reference, $correction->corrects_reference])->first())
                 <p class="small" style="margin-top:6px"><a href="{{ route('photos.show', $photo) }}">📷 Check the EC8A photo</a></p>

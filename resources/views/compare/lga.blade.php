@@ -30,7 +30,7 @@
 <section class="card">
     <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:12px">
         <h2 style="margin:0">Polling units to check</h2>
-        @if (auth()->user()->isAdmin())
+        @if (auth()->user()->can('export_data'))
             <a class="button secondary" href="{{ route('compare.export', ['lga' => $lga]) }}">Export flagged (CSV)</a>
         @endif
     </div>

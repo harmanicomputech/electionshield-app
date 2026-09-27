@@ -16,7 +16,7 @@
 
 <div class="actions" style="margin-bottom:16px">
     <a class="button" href="{{ route('townhall.present', $session) }}" target="_blank" rel="noopener">Presenter view</a>
-    @if (auth()->user()->isAdmin())
+    @if (auth()->user()->can('manage_townhall'))
         <a class="button secondary" href="{{ route('townhall.edit', $session) }}">Edit session</a>
         <form method="post" action="{{ route('townhall.reminder', $session) }}">@csrf<button class="button secondary" type="submit">SMS reminder to supporters…</button></form>
     @endif

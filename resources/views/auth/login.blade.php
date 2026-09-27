@@ -33,19 +33,42 @@
             </form>
         </div>
     @else
-        <div class="card">
-            <h1>Log in</h1>
-            <p class="muted small">Election Shield situation room. Accounts are created by an admin.</p>
-            <form method="post" action="{{ route('login.attempt') }}">
-                @csrf
-                <label for="email">Email</label>
-                <input id="email" type="email" name="email" value="{{ old('email') }}" required autofocus autocomplete="username">
-                @error('email')<div class="field-error">{{ $message }}</div>@enderror
-                <label for="password">Password</label>
-                <input id="password" type="password" name="password" required autocomplete="current-password">
-                <label class="inline"><input type="checkbox" name="remember" value="1" checked> Keep me logged in on this device</label>
-                <button class="button block" type="submit">Log in</button>
-            </form>
+        @php
+            $agentTab = old('phone') !== null || $errors->has('phone') || request('as') === 'agent';
+        @endphp
+        <div class="card login-card">
+            <div class="login-tabs" role="tablist">
+                <a href="{{ route('login') }}" role="tab" aria-selected="{{ $agentTab ? 'false' : 'true' }}" class="{{ $agentTab ? '' : 'on' }}">Staff</a>
+                <a href="{{ route('login', ['as' => 'agent']) }}" role="tab" aria-selected="{{ $agentTab ? 'true' : 'false' }}" class="{{ $agentTab ? 'on' : '' }}">Polling agent</a>
+            </div>
+            @if ($agentTab)
+                <h1>Agent sign-in</h1>
+                <p class="muted small">Use the phone number you were registered with and the same 4-digit PIN you use on USSD.</p>
+                <form method="post" action="{{ route('login.agent') }}">
+                    @csrf
+                    <label for="phone">Phone number</label>
+                    <input id="phone" type="tel" name="phone" value="{{ old('phone') }}" required autofocus autocomplete="tel" inputmode="tel" placeholder="0803 123 4567">
+                    @error('phone')<div class="field-error">{{ $message }}</div>@enderror
+                    <label for="pin">PIN</label>
+                    <input id="pin" type="password" name="pin" required inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="current-password" class="pin-input">
+                    <p></p>
+                    <button class="button block" type="submit">Sign in</button>
+                </form>
+                <p class="small muted" style="margin-top:12px">Forgot your PIN? Call your coordinator to reset it.</p>
+            @else
+                <h1>Log in</h1>
+                <p class="muted small">Election Shield situation room. Accounts are created by an admin.</p>
+                <form method="post" action="{{ route('login.attempt') }}">
+                    @csrf
+                    <label for="email">Email</label>
+                    <input id="email" type="email" name="email" value="{{ old('email') }}" required autofocus autocomplete="username">
+                    @error('email')<div class="field-error">{{ $message }}</div>@enderror
+                    <label for="password">Password</label>
+                    <input id="password" type="password" name="password" required autocomplete="current-password">
+                    <label class="inline"><input type="checkbox" name="remember" value="1" checked> Keep me logged in on this device</label>
+                    <button class="button block" type="submit">Log in</button>
+                </form>
+            @endif
         </div>
     @endif
 </div>

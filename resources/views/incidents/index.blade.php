@@ -74,7 +74,7 @@
                 {{ $incident->reference }} · {{ \App\Support\Time::local($incident->reported_at, 'j M, g:i A') }}
             </div>
             @if ($incident->note)<p class="note">{{ $incident->note }}</p>@endif
-            <div class="meta">Reported by {{ $incident->agent_name ?? 'an agent' }}@if ($incident->agent_phone) · <a class="tel" href="tel:{{ $incident->agent_phone }}">Call {{ $incident->agent_phone }}</a>@endif</div>
+            <div class="meta">Reported by {{ $incident->agent_name ?? 'an agent' }}@if ($incident->agent_phone && auth()->user()->can('view_agents')) · <a class="tel" href="tel:{{ $incident->agent_phone }}">Call {{ $incident->agent_phone }}</a>@endif</div>
 
             @if ($incident->acknowledged_at)
                 <p class="response">Acknowledged by {{ $incident->acknowledged_by }} at {{ \App\Support\Time::local($incident->acknowledged_at) }}.
@@ -82,6 +82,7 @@
                 </p>
             @endif
 
+@can('respond_incidents')
             <div class="actions">
                 @if (! $incident->acknowledged_at)
                     <form method="post" action="{{ route('incidents.acknowledge', $incident->reference) }}" data-queue="Acknowledge {{ $incident->reference }}">
@@ -108,6 +109,7 @@
                 @endif
             </div>
             <div class="queue-state" data-queue-state aria-live="polite"></div>
+@endcan
         </li>
     @endforeach
 </ul>

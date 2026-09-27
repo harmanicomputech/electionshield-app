@@ -8,7 +8,7 @@
     <p class="muted">Live sessions with voters. The public page is <a href="{{ route('townhall') }}">{{ route('townhall') }}</a>.</p>
 </div>
 
-@if (auth()->user()->isAdmin())<p><a class="button" href="{{ route('townhall.create') }}">New session</a></p>@endif
+@if (auth()->user()->can('manage_townhall'))<p><a class="button" href="{{ route('townhall.create') }}">New session</a></p>@endif
 
 @if ($sessions->isEmpty())<div class="card"><p class="muted">No sessions yet.</p></div>@endif
 

@@ -53,6 +53,7 @@
             <h2>Does the sheet match?</h2>
             <p class="small">Currently: <b>{{ $photo->reviewLabel() }}</b>@if ($photo->reviewed_by) ({{ $photo->reviewed_by }}, {{ \App\Support\Time::local($photo->reviewed_at, 'j M, g:i A') }})@endif</p>
             @if ($photo->review_note)<p class="small">“{{ $photo->review_note }}”</p>@endif
+@can('review_media')
             <form method="post" action="{{ route('photos.review', $photo) }}" data-queue="Review {{ $photo->result_reference }}">
                 @csrf
                 <label class="inline"><input type="radio" name="review_status" value="matches" @checked($photo->review_status === 'matches') required> Matches our agent's figures</label>
@@ -63,6 +64,7 @@
                 <button class="button" type="submit">Save</button>
                 <div class="queue-state" data-queue-state aria-live="polite"></div>
             </form>
+@endcan
         </section>
 
         <section class="card">
@@ -71,7 +73,7 @@
             <p><code>{{ $uploadLink }}</code></p>
         </section>
 
-        @if (auth()->user()->isAdmin())
+        @if (auth()->user()->can('delete_evidence'))
             <form method="post" action="{{ route('photos.destroy', $photo) }}" onsubmit="return confirm('Delete this photo? It is evidence.')">
                 @csrf @method('delete')
                 <button class="button danger" type="submit">Delete photo</button>

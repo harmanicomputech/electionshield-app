@@ -90,4 +90,18 @@ return [
     // and from the pinger URL / host cron; see App\Support\BackgroundRunner.
     'background_runner' => (bool) env('BACKGROUND_RUNNER', true),
 
+    // Photos and videos agents send with results and incidents.
+    'media' => [
+        'max_video_mb' => (int) env('MEDIA_MAX_VIDEO_MB', 100),
+        'max_files' => (int) env('MEDIA_MAX_FILES', 6),
+    ],
+
+    // Pop-ups in the situation room for new results and incidents: only
+    // reports from the last this-many hours pop up (so imports don't), and
+    // unanswered ones pop up again after the snooze (minutes).
+    'alerts' => [
+        'recent_hours' => (int) env('ALERTS_RECENT_HOURS', 12),
+        'repeat_minutes' => (int) env('ALERTS_REPEAT_MINUTES', 5),
+    ],
+
 ];

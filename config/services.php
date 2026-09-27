@@ -49,6 +49,8 @@ return [
         // The USSD admin console (corrections are reviewed there).
         'console_url' => rtrim((string) env('USSD_CONSOLE_URL', preg_replace('#/api/?$#', '', (string) env('USSD_API_URL', 'https://ussd.techatronagency.com/api')).'/admin'), '/'),
         'timeout' => (int) env('USSD_API_TIMEOUT', 20),
+        // Shown to agents on their pages, e.g. *384*92342#.
+        'service_code' => env('USSD_SERVICE_CODE'),
     ],
 
     // Web Push. Keys are normally generated on the System page; these

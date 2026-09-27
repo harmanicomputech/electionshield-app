@@ -5,7 +5,7 @@
 @section('content')
 <div class="page-head">
     <h1>My account</h1>
-    <p class="muted">{{ $user->email }} · {{ $user->role->label() }} · {{ $user->lga ? 'home LGA '.$user->lga : 'state-wide' }}{{ $user->isAdmin() ? '' : ' (set by an admin)' }}</p>
+    <p class="muted">{{ $user->email }} · {{ $user->roleName() }} · {{ $user->lga ? 'home LGA '.$user->lga : 'state-wide' }}{{ $user->can('manage_users') ? '' : ' (set by an admin)' }}</p>
 </div>
 
 <div class="grid two">

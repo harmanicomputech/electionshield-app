@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Enums\UserRole;
 use App\Models\AuditLog;
 use App\Models\User;
 use App\Services\UssdIngestor;
@@ -35,7 +34,8 @@ class ConsoleTest extends TestCase
 
         $user = User::firstOrFail();
         $this->assertSame('k@example.com', $user->email);
-        $this->assertSame(UserRole::Admin, $user->role);
+        $this->assertSame('admin', $user->role);
+        $this->assertTrue($user->can('manage_users'));
         $this->assertAuthenticatedAs($user);
 
         // Once an account exists, setup is closed.

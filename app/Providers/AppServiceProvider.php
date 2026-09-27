@@ -6,9 +6,12 @@ use App\Enums\ResultStatus;
 use App\Models\Incident;
 use App\Models\Result;
 use App\Models\SyncState;
+use App\Models\User;
 use App\Models\WebhookEvent;
+use App\Support\Permission;
 use App\Support\Settings;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use Throwable;
@@ -22,6 +25,10 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        foreach (Permission::all() as $permission) {
+            Gate::define($permission, fn (User $user) => $user->hasPermission($permission));
+        }
+
         View::composer('layouts.app', function ($view) {
             $view->with([
                 'showingRehearsal' => Settings::showingRehearsal(),

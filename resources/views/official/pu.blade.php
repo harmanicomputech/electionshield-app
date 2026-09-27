@@ -68,6 +68,7 @@
     <h2>{{ $official ? 'IReV result' : 'Enter the IReV result' }}</h2>
     @if ($official)<p class="small muted">Last saved by {{ $official->entered_by }}, {{ \App\Support\Time::local($official->updated_at, 'j M, g:i A') }} ({{ $official->source }}).</p>@endif
     <p class="small muted">Type the figures exactly as on the result sheet in IReV. Our agent's figures are shown only after saving, so they can't sway the entry.</p>
+@can('manage_official_results')
     <form method="post" action="{{ route('official.pu.update', $unit->code) }}">
         @csrf @method('put')
         <label class="inline"><input type="radio" name="irev_status" value="uploaded" @checked($uploaded)> Result sheet is on IReV</label>
@@ -95,7 +96,8 @@
         <p></p>
         <button class="button" type="submit">Save</button>
     </form>
-    @if ($official && auth()->user()->isAdmin())
+@endcan
+    @if ($official && auth()->user()->can('delete_evidence'))
         <form method="post" action="{{ route('official.pu.destroy', $unit->code) }}" onsubmit="return confirm('Delete this IReV entry?')" style="margin-top:12px">
             @csrf @method('delete')
             <button class="button danger" type="submit">Delete entry</button>

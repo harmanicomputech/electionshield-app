@@ -1,16 +1,13 @@
 @php
     $user = auth()->user();
-    // [route, label, icon path, routes it covers]
-    $tabs = [
-        ['dashboard', 'Dashboard', 'M3 13h8V3H3v10Zm0 8h8v-6H3v6Zm10 0h8V11h-8v10Zm0-18v6h8V3h-8Z', ['dashboard']],
-        ['incidents', 'Incidents', 'M12 3 2 20h20L12 3Zm0 6v5m0 3h.01', ['incidents']],
-        ['monitor', 'PUs', 'M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21Zm0-9a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z', ['monitor', 'monitor.*']],
-        ['collation', 'Results', 'M4 20V10m6 10V4m6 16v-7m4 7H2', ['collation', 'collation.*', 'spread']],
-    ];
+    // The agent pages need an agent's account (a phone number), not just the permission.
+    $can = fn (string $permission) => ($user?->hasPermission($permission) ?? false) && ($permission !== \App\Support\Permission::SUBMIT_FIELD_REPORTS || filled($user->phone));
     $active = fn (string|array $names) => request()->routeIs(...(array) $names) ? 'on' : '';
-
-    // Desktop sidebar: [section, [[route, label, icon path, routes it covers], ...]]
     $icon = [
+        'dashboard' => 'M3 13h8V3H3v10Zm0 8h8v-6H3v6Zm10 0h8V11h-8v10Zm0-18v6h8V3h-8Z',
+        'incidents' => 'M12 3 2 20h20L12 3Zm0 6v5m0 3h.01',
+        'monitor' => 'M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21Zm0-9a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z',
+        'results' => 'M4 20V10m6 10V4m6 16v-7m4 7H2',
         'collation' => 'M4 6h16M4 12h16M4 18h10',
         'spread' => 'M4 20V10m6 10V4m6 16v-7m4 7H2',
         'compare' => 'M12 3v18M5 7h14M5 7l-3 7a3 3 0 0 0 6 0L5 7Zm14 0-3 7a3 3 0 0 0 6 0l-3-7Z',
@@ -19,41 +16,66 @@
         'broadcasts' => 'M3 11v2a1 1 0 0 0 1 1h3l6 5V5L7 10H4a1 1 0 0 0-1 1Zm14-3a5 5 0 0 1 0 8',
         'system' => 'M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3M18 3v4h-4M6 21v-4h4',
         'users' => 'M16 20v-2a4 4 0 0 0-8 0v2M12 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z',
+        'roles' => 'M12 3 4 6v6c0 5 3.4 8.3 8 9 4.6-.7 8-4 8-9V6l-8-3Zm-3 9 2 2 4-4',
         'audit' => 'M9 4h6l1 2h3v14H5V6h3l1-2Zm-1 8h8m-8 4h5',
         'corrections' => 'M4 20h4L19 9l-4-4L4 16v4Zm9-13 4 4',
         'agents' => 'M17 20v-2a4 4 0 0 0-3-3.9M7 20v-2a4 4 0 0 1 4-4h2M12 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm6-1a2.5 2.5 0 1 0 0-5',
-        'map' => 'M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2Zm0 0v14m6-12v14',
         'sitrep' => 'M6 3h9l4 4v14H6V3Zm9 0v4h4M9 12h7M9 16h7M9 8h3',
+        'home' => 'M3 11 12 4l9 7v9h-6v-6H9v6H3v-9Z',
+        'history' => 'M12 7v5l3 2M3 12a9 9 0 1 0 3-6.7L3 8m0-5v5h5',
         'push' => 'M6 16v-5a6 6 0 1 1 12 0v5l2 2H4l2-2Zm4 4h4',
         'account' => 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8a7 7 0 0 1 14 0',
         'install' => 'M12 3v12m-5-5 5 5 5-5M5 21h14',
         'logout' => 'M15 4h4v16h-4M10 8l-4 4 4 4M6 12h11',
     ];
-    $sections = $user ? array_filter([
-        ['Election day', [
-            [$tabs[0][0], $tabs[0][1], $tabs[0][2], $tabs[0][3]],
-            [$tabs[1][0], $tabs[1][1], $tabs[1][2], $tabs[1][3]],
-            ['monitor', 'Polling units', $tabs[2][2], $tabs[2][3]],
-            ['agents', 'Agents', $icon['agents'], ['agents']],
-            ['corrections', 'Corrections', $icon['corrections'], ['corrections']],
-        ]],
-        ['Results', [
-            ['collation', 'Collation', $icon['collation'], ['collation', 'collation.*']],
-            ['spread', '25% rule', $icon['spread'], ['spread']],
-            ['compare', 'Official vs PVT', $icon['compare'], ['compare', 'compare.*', 'official', 'official.*']],
-            ['photos', 'EC8A photos', $icon['photos'], ['photos', 'photos.*']],
-            ['sitrep', 'Situation report', $icon['sitrep'], ['sitrep', 'evidence']],
-        ]],
-        ['Engage', array_values(array_filter([
-            ['townhall.manage', 'Town hall', $icon['townhall'], ['townhall.manage', 'townhall.moderate', 'townhall.create', 'townhall.edit']],
-            $user->isAdmin() ? ['broadcasts', 'Broadcasts', $icon['broadcasts'], ['broadcasts', 'broadcasts.*', 'contacts']] : null,
-        ]))],
-        $user->isAdmin() ? ['Admin', [
-            ['system', 'System & sync', $icon['system'], ['system']],
-            ['users', 'Users', $icon['users'], ['users']],
-            ['audit', 'Audit log', $icon['audit'], ['audit']],
-        ]] : null,
-    ]) : [];
+
+    // Everything in the menus: [route, label, icon, routes it covers, permission]
+    $menu = [
+        'Agent' => [
+            ['field', 'Home', $icon['home'], ['field'], \App\Support\Permission::SUBMIT_FIELD_REPORTS],
+            ['field.result', 'Submit result', $icon['results'], ['field.result'], \App\Support\Permission::SUBMIT_FIELD_REPORTS],
+            ['field.incident', 'Report incident', $icon['incidents'], ['field.incident'], \App\Support\Permission::SUBMIT_FIELD_REPORTS],
+            ['field.history', 'My reports', $icon['history'], ['field.history'], \App\Support\Permission::SUBMIT_FIELD_REPORTS],
+        ],
+        'Election day' => [
+            ['dashboard', 'Dashboard', $icon['dashboard'], ['dashboard'], \App\Support\Permission::VIEW_DASHBOARDS],
+            ['incidents', 'Incidents', $icon['incidents'], ['incidents'], \App\Support\Permission::VIEW_INCIDENTS],
+            ['monitor', 'Polling units', $icon['monitor'], ['monitor', 'monitor.*'], \App\Support\Permission::VIEW_DASHBOARDS],
+            ['agents', 'Agents', $icon['agents'], ['agents', 'agents.*'], \App\Support\Permission::VIEW_AGENTS],
+            ['corrections', 'Corrections', $icon['corrections'], ['corrections'], \App\Support\Permission::VIEW_DASHBOARDS],
+        ],
+        'Results' => [
+            ['collation', 'Collation', $icon['collation'], ['collation', 'collation.*'], \App\Support\Permission::VIEW_DASHBOARDS],
+            ['spread', '25% rule', $icon['spread'], ['spread'], \App\Support\Permission::VIEW_DASHBOARDS],
+            ['compare', 'Official vs PVT', $icon['compare'], ['compare', 'compare.*', 'official', 'official.*'], \App\Support\Permission::VIEW_DASHBOARDS],
+            ['photos', 'Photos & videos', $icon['photos'], ['photos', 'photos.*', 'media.*'], \App\Support\Permission::VIEW_DASHBOARDS],
+            ['sitrep', 'Situation report', $icon['sitrep'], ['sitrep', 'evidence'], \App\Support\Permission::VIEW_DASHBOARDS],
+        ],
+        'Engage' => [
+            ['townhall.manage', 'Town hall', $icon['townhall'], ['townhall.manage', 'townhall.moderate', 'townhall.create', 'townhall.edit'], \App\Support\Permission::MODERATE_TOWNHALL],
+            ['broadcasts', 'Broadcasts', $icon['broadcasts'], ['broadcasts', 'broadcasts.*', 'contacts'], \App\Support\Permission::MANAGE_BROADCASTS],
+        ],
+        'Admin' => [
+            ['system', 'System & sync', $icon['system'], ['system'], \App\Support\Permission::MANAGE_SYSTEM],
+            ['users', 'Users', $icon['users'], ['users'], \App\Support\Permission::MANAGE_USERS],
+            ['roles', 'Roles', $icon['roles'], ['roles', 'roles.*'], \App\Support\Permission::MANAGE_USERS],
+            ['audit', 'Audit log', $icon['audit'], ['audit'], \App\Support\Permission::VIEW_AUDIT],
+        ],
+    ];
+    $sections = [];
+    foreach ($menu as $heading => $items) {
+        $allowed = array_values(array_filter($items, fn ($item) => $can($item[4])));
+        if ($allowed) {
+            $sections[] = [$heading, $allowed];
+        }
+    }
+
+    // The phone tab bar and tablet top bar: four main places for this person.
+    $all = array_merge(...array_map(fn ($section) => $section[1], $sections ?: [[null, []]]));
+    $tabs = array_slice(array_values(array_filter($all, fn ($item) => in_array($item[0], ['field', 'field.result', 'field.incident', 'field.history', 'dashboard', 'incidents', 'monitor', 'collation'], true))), 0, 4);
+    $tabNames = array_column($tabs, 0);
+    $more = array_values(array_filter($all, fn ($item) => ! in_array($item[0], $tabNames, true)));
+    $short = ['monitor' => 'PUs', 'collation' => 'Results', 'field.result' => 'Result', 'field.incident' => 'Incident', 'field.history' => 'History'];
 @endphp
 <!DOCTYPE html>
 <html lang="en">
@@ -78,11 +100,11 @@
 <body @class(['has-sidebar' => $user]) @if ($user) data-cache-pages="1" @endif>
     @if ($user)
         <aside class="sidebar" aria-label="Main">
-            <a class="side-brand" href="{{ route('dashboard') }}"><img src="/icons/icon-192.png" alt="" width="36" height="36"><span>Election Shield<small>Ebonyi {{ \Illuminate\Support\Carbon::parse(config('election.date'))->format('Y') }}</small></span></a>
+            <a class="side-brand" href="{{ route($user->homeRoute()) }}"><img src="/icons/icon-192.png" alt="" width="36" height="36"><span>Election Shield<small>Ebonyi {{ \Illuminate\Support\Carbon::parse(config('election.date'))->format('Y') }}</small></span></a>
             <nav class="side-nav">
                 @foreach ($sections as [$heading, $items])
                     <p class="side-heading">{{ $heading }}</p>
-                    @foreach ($items as [$name, $label, $path, $covers])
+                    @foreach ($items as [$name, $label, $path, $covers, $permission])
                         <a href="{{ route($name) }}" class="{{ $active($covers) }}" @if ($active($covers)) aria-current="page" @endif @if (in_array($name, ['incidents', 'corrections'], true)) data-live-id="side-{{ $name }}" @endif>
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ $path }}"/></svg>
                             <span>{{ $label }}</span>
@@ -98,7 +120,7 @@
                 <button type="button" data-install hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ $icon['install'] }}"/></svg><span>Install app</span></button>
                 <div class="side-user">
                     <span class="avatar" aria-hidden="true">{{ \Illuminate\Support\Str::upper(\Illuminate\Support\Str::substr($user->name, 0, 1)) }}</span>
-                    <span class="who">{{ $user->name }}<small>{{ $user->role->label() }}{{ $user->lga ? ' · '.$user->lga : '' }}</small></span>
+                    <span class="who">{{ $user->name }}<small>{{ $user->roleName() }}{{ $user->lga ? ' · '.$user->lga : '' }}</small></span>
                     <form method="post" action="{{ route('logout') }}" data-logout>@csrf<input type="hidden" name="push_endpoint" data-push-endpoint><button type="submit" title="Log out" aria-label="Log out"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ $icon['logout'] }}"/></svg></button></form>
                 </div>
             </div>
@@ -106,30 +128,17 @@
     @endif
     <header class="topbar">
         <div class="wrap">
-            <a class="brand" href="{{ $user ? route('dashboard') : route('login') }}"><img src="/icons/icon-192.png" alt="">Election Shield</a>
+            <a class="brand" href="{{ $user ? route($user->homeRoute()) : route('login') }}"><img src="/icons/icon-192.png" alt="">Election Shield</a>
             @if ($user)
                 <nav class="topnav" aria-label="Main">
                     @foreach ($tabs as [$name, $label, $path, $covers])
-                        <a href="{{ route($name) }}" class="{{ $active($covers) }}" data-live-id="top-{{ $name }}">{{ $label }}@if ($name === 'incidents' && $urgentOpen)<span class="count" aria-label="{{ $urgentOpen }} urgent open">{{ $urgentOpen }}</span>@endif</a>
+                        <a href="{{ route($name) }}" class="{{ $active($covers) }}" data-live-id="top-{{ $name }}">{{ $short[$name] ?? $label }}@if ($name === 'incidents' && $urgentOpen)<span class="count" aria-label="{{ $urgentOpen }} urgent open">{{ $urgentOpen }}</span>@endif</a>
                     @endforeach
-                    <a href="{{ route('townhall.manage') }}" class="{{ $active(['townhall.manage', 'townhall.moderate', 'townhall.create', 'townhall.edit']) }}">Town hall</a>
                     <span class="spacer"></span>
                     <details class="top-more">
                         <summary>More ▾</summary>
                         <div class="menu">
-                            @if ($user->isAdmin())
-                                <a href="{{ route('system') }}">System &amp; sync</a>
-                                <a href="{{ route('users') }}">Users</a>
-                                <a href="{{ route('audit') }}">Audit log</a>
-                                <a href="{{ route('broadcasts') }}">Broadcasts</a>
-                                <hr>
-                            @endif
-                            <a href="{{ route('agents') }}">Agents</a>
-                            <a href="{{ route('corrections') }}">Corrections{{ $pendingCorrections ? " ({$pendingCorrections})" : '' }}</a>
-                            <a href="{{ route('account') }}">My account</a>
-                            <a href="{{ route('push') }}">Notifications</a>
-                            <button type="button" data-install hidden>Install app</button>
-                            <form method="post" action="{{ route('logout') }}" data-logout>@csrf<input type="hidden" name="push_endpoint" data-push-endpoint><button type="submit">Log out ({{ $user->name }})</button></form>
+                            @include('partials.more-menu')
                         </div>
                     </details>
                 </nav>
@@ -167,7 +176,7 @@
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ $path }}"/></svg>
                         @if ($name === 'incidents' && $urgentOpen)<span class="count" aria-label="{{ $urgentOpen }} urgent open">{{ $urgentOpen }}</span>@endif
                     </span>
-                    {{ $label }}
+                    {{ $short[$name] ?? $label }}
                 </a>
             @endforeach
             <details>
@@ -176,20 +185,7 @@
                     More
                 </summary>
                 <div class="menu">
-                    @if ($user->isAdmin())
-                        <a href="{{ route('system') }}">System &amp; sync</a>
-                        <a href="{{ route('users') }}">Users</a>
-                        <a href="{{ route('audit') }}">Audit log</a>
-                        <a href="{{ route('broadcasts') }}">Broadcasts</a>
-                        <hr>
-                    @endif
-                    <a href="{{ route('agents') }}">Agents</a>
-                    <a href="{{ route('corrections') }}">Corrections{{ $pendingCorrections ? " ({$pendingCorrections})" : '' }}</a>
-                    <a href="{{ route('townhall.manage') }}">Town hall</a>
-                    <a href="{{ route('account') }}">My account</a>
-                    <a href="{{ route('push') }}">Notifications</a>
-                    <button type="button" data-install hidden>Install app</button>
-                    <form method="post" action="{{ route('logout') }}" data-logout>@csrf<input type="hidden" name="push_endpoint" data-push-endpoint><button type="submit">Log out ({{ $user->name }})</button></form>
+                    @include('partials.more-menu')
                 </div>
             </details>
         </nav>

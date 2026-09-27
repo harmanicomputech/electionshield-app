@@ -8,7 +8,7 @@ class MaterialReport extends Model
 {
     protected $fillable = [
         'ussd_id', 'polling_unit_code', 'lga', 'ward', 'status', 'status_label',
-        'agent_name', 'agent_phone', 'reported_at', 'rehearsal',
+        'agent_name', 'agent_phone', 'reported_at', 'rehearsal', 'channel',
     ];
 
     protected function casts(): array

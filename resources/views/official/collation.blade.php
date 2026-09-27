@@ -14,6 +14,7 @@
 </div>
 
 <section class="card">
+@can('manage_official_results')
     <form method="post" action="{{ route('official.collation.update', array_filter([$level, $lga, $level === 'ward' ? $ward : null])) }}">
         @csrf @method('put')
         <div class="filters">
@@ -38,5 +39,6 @@
         <p></p>
         <button class="button" type="submit">Save {{ $form }}</button>
     </form>
+@endcan
 </section>
 @endsection

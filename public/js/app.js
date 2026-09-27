@@ -77,7 +77,7 @@
       .catch(showStatus);
   }
 
-  window.addEventListener('online', function () { showStatus(); flushQueue(); flushPhotos(); refresh(); });
+  window.addEventListener('online', function () { showStatus(); flushQueue(); flushPhotos(); flushForms(); refresh(); });
   window.addEventListener('offline', showStatus);
   document.addEventListener('visibilitychange', function () { if (!document.hidden) { refresh(); } });
   setInterval(refresh, REFRESH_MS);
@@ -109,7 +109,7 @@
   function showQueue(message) {
     var el = document.querySelector('[data-queue-banner]');
     if (!el) { return; }
-    var count = readQueue().length + queuedPhotos;
+    var count = readQueue().length + queuedPhotos + queuedForms;
     el.textContent = message || (count ? count + ' action' + (count > 1 ? 's' : '') + ' queued: will send when you are back online' : '');
     el.hidden = !el.textContent;
   }
@@ -202,18 +202,22 @@
   function idb() {
     return new Promise(function (resolve, reject) {
       if (!window.indexedDB) { reject(new Error('no indexedDB')); return; }
-      var request = indexedDB.open('es-queue', 1);
-      request.onupgradeneeded = function () { request.result.createObjectStore('photos', { keyPath: 'id' }); };
+      var request = indexedDB.open('es-queue', 2);
+      request.onupgradeneeded = function () {
+        ['photos', 'forms'].forEach(function (name) {
+          if (!request.result.objectStoreNames.contains(name)) { request.result.createObjectStore(name, { keyPath: 'id' }); }
+        });
+      };
       request.onsuccess = function () { resolve(request.result); };
       request.onerror = function () { reject(request.error); };
     });
   }
 
-  function photoStore(mode, fn) {
+  function photoStore(mode, fn, name) {
     return idb().then(function (db) {
       return new Promise(function (resolve, reject) {
-        var tx = db.transaction('photos', mode);
-        var result = fn(tx.objectStore('photos'));
+        var tx = db.transaction(name || 'photos', mode);
+        var result = fn(tx.objectStore(name || 'photos'));
         tx.oncomplete = function () { resolve(result && 'result' in result ? result.result : undefined); };
         tx.onerror = function () { reject(tx.error); };
       });
@@ -318,6 +322,190 @@
           }, keep);
         });
       });
+    });
+  }
+
+
+  /*
+   * Agent pages (forms marked data-field-form): results, incidents, check-in
+   * and materials, with photos and videos. Photos are shrunk on the phone.
+   * With no network (or the server unreachable) the whole form, files
+   * included, is kept in IndexedDB ('es-queue' → 'forms') and sent when the
+   * network returns: by this page and by the service worker ('es-forms').
+   * Queued forms are re-sent with the current CSRF token.
+   */
+  var queuedForms = 0;
+
+  function countForms() {
+    return photoStore('readonly', function (store) { return store.count(); }, 'forms')
+      .then(function (count) { queuedForms = count || 0; showQueue(); }, function () {});
+  }
+
+  function formData(item) {
+    var data = new FormData();
+    item.fields.forEach(function (pair) { data.append(pair[0], pair[0] === '_token' && csrf ? csrf : pair[1]); });
+    item.files.forEach(function (file) { data.append(file.field, file.blob, file.filename); });
+    return data;
+  }
+
+  function sendForm(item) {
+    return fetch(item.url, { method: 'POST', credentials: 'same-origin', headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': csrf || '' }, body: formData(item) });
+  }
+
+  function keepForm(item) {
+    return photoStore('readwrite', function (store) { store.put(item); }, 'forms').then(function () {
+      countForms();
+      if (navigator.serviceWorker && navigator.serviceWorker.ready) {
+        navigator.serviceWorker.ready.then(function (reg) { if (reg.sync) { return reg.sync.register('es-forms'); } }).catch(function () {});
+      }
+    });
+  }
+
+  function errorText(body, status) {
+    if (body && body.errors) { return Object.keys(body.errors).map(function (k) { return body.errors[k][0]; }).join(' '); }
+    return (body && body.message) || 'Could not send (' + status + ')';
+  }
+
+  var sendingForms = false;
+  function flushForms() {
+    if (sendingForms || !navigator.onLine) { return; }
+    sendingForms = true;
+    var notes = [];
+    photoStore('readonly', function (store) { return store.getAll(); }, 'forms').then(function (items) {
+      return (items || []).reduce(function (chain, item) {
+        return chain.then(function () {
+          return sendForm(item).then(function (response) {
+            if (response.status >= 500 || response.status === 419) { throw new Error('retry later'); }
+            return response.json().catch(function () { return {}; }).then(function (body) {
+              notes.push(item.label + ': ' + (response.ok ? (body.message || 'sent ✓') : errorText(body, response.status)));
+              return photoStore('readwrite', function (store) { store.delete(item.id); }, 'forms');
+            });
+          });
+        });
+      }, Promise.resolve());
+    }).catch(function () {}).then(function () {
+      sendingForms = false;
+      countForms();
+      if (notes.length) { showQueue('Sent from this phone: ' + notes.join(' · ')); setTimeout(function () { showQueue(); }, 12000); }
+    });
+  }
+
+  function bindFieldForms() {
+    document.querySelectorAll('form[data-field-form]').forEach(function (form) {
+      if (form.dataset.bound) { return; }
+      form.dataset.bound = '1';
+      form.addEventListener('submit', function (event) {
+        if (!window.fetch || !window.FormData) { return; } // plain form post
+        event.preventDefault();
+        var submitter = event.submitter;
+        var buttons = form.querySelectorAll('button[type=submit]');
+        var tooBig = form.querySelector('.too-big');
+        if (tooBig) { setState(form, 'A video is too large: remove it or record a shorter one.', 'failed'); return; }
+        buttons.forEach(function (b) { b.disabled = true; });
+        setState(form, 'Preparing…', 'queued');
+
+        var fields = [];
+        var files = [];
+        new FormData(form).forEach(function (value, key) { if (typeof value === 'string') { fields.push([key, value]); } });
+        if (submitter && submitter.name) { fields.push([submitter.name, submitter.value]); }
+        var inputs = Array.prototype.slice.call(form.querySelectorAll('input[type=file]'));
+        var pending = [];
+        inputs.forEach(function (input) {
+          Array.prototype.forEach.call(input.files || [], function (file) {
+            pending.push(shrink(file).then(function (blob) {
+              var image = /^image\//.test(file.type) && blob !== file;
+              files.push({ field: input.name, blob: blob, filename: image ? (file.name || 'photo').replace(/\.[^.]+$/, '') + '.jpg' : (file.name || 'video.mp4') });
+            }));
+          });
+        });
+
+        Promise.all(pending).then(function () {
+          var item = { id: Date.now() + '-' + Math.random().toString(36).slice(2), url: form.getAttribute('action'), fields: fields, files: files, label: form.getAttribute('data-field-form') };
+          var done = function () { buttons.forEach(function (b) { b.disabled = false; }); };
+          var keep = function () {
+            return keepForm(item).then(function () {
+              setState(form, 'No network: saved on this phone. It will be sent when the network returns.', 'queued');
+              form.reset();
+              var previews = form.querySelector('[data-media-previews]');
+              if (previews) { previews.innerHTML = ''; }
+              done();
+            }, function () {
+              setState(form, 'No network, and this browser cannot keep the report. Try again when you have signal, or use USSD.', 'failed');
+              done();
+            });
+          };
+
+          if (!navigator.onLine) { return keep(); }
+          setState(form, files.length ? 'Sending (large files can take a while)…' : 'Sending…', 'queued');
+          return sendForm(item).then(function (response) {
+            if (response.status >= 500) { return keep(); }
+            return response.json().catch(function () { return {}; }).then(function (body) {
+              if (response.ok) {
+                setState(form, body.message || 'Sent ✓', 'sent');
+                setTimeout(function () { if (body.url && body.url !== location.href) { location.href = body.url; } else { location.reload(); } }, 1400);
+              } else {
+                setState(form, response.status === 419 ? 'Your session expired: sign in again.' : errorText(body, response.status), 'failed');
+                done();
+              }
+            });
+          }, keep);
+        });
+      });
+    });
+  }
+
+  // Previews of the chosen photos and videos, with a size check for videos.
+  function bindMediaInputs() {
+    document.querySelectorAll('[data-media-input]').forEach(function (box) {
+      var input = box.querySelector('input[type=file]');
+      var previews = box.querySelector('[data-media-previews]');
+      if (!input || !previews || input.dataset.bound) { return; }
+      input.dataset.bound = '1';
+      var maxBytes = parseInt(box.getAttribute('data-max-mb'), 10) * 1048576;
+      var maxFiles = parseInt(box.getAttribute('data-max-files'), 10);
+      input.addEventListener('change', function () {
+        previews.innerHTML = '';
+        Array.prototype.slice.call(input.files || [], 0, 12).forEach(function (file, index) {
+          var figure = document.createElement('figure');
+          var video = /^video\//.test(file.type);
+          var media = document.createElement(video ? 'video' : 'img');
+          safe(function () { media.src = URL.createObjectURL(file); });
+          if (video) { media.muted = true; media.preload = 'metadata'; }
+          media.alt = '';
+          var caption = document.createElement('figcaption');
+          var mb = file.size / 1048576;
+          caption.textContent = (video ? '🎬 ' : '') + (mb >= 1 ? mb.toFixed(1) + ' MB' : Math.max(1, Math.round(file.size / 1024)) + ' KB');
+          if ((video && file.size > maxBytes) || index >= maxFiles) {
+            figure.className = 'too-big';
+            caption.textContent = index >= maxFiles ? 'Too many files' : 'Too large (max ' + (maxBytes / 1048576) + ' MB)';
+          }
+          figure.appendChild(media);
+          figure.appendChild(caption);
+          previews.appendChild(figure);
+        });
+      });
+    });
+  }
+
+  // Result form: running totals, and a warning when votes exceed accredited.
+  function bindResultForms() {
+    document.querySelectorAll('[data-result-form]').forEach(function (form) {
+      var out = form.querySelector('[data-totals]');
+      if (!out || form.dataset.totalsBound) { return; }
+      form.dataset.totalsBound = '1';
+      var num = function (el) { return el && el.value !== '' ? parseInt(el.value, 10) || 0 : 0; };
+      var update = function () {
+        var valid = 0;
+        form.querySelectorAll('[data-vote]').forEach(function (el) { valid += num(el); });
+        var rejected = num(form.querySelector('[data-rejected]'));
+        var accredited = form.querySelector('[data-accredited]');
+        var cast = valid + rejected;
+        out.textContent = 'Valid votes ' + valid.toLocaleString() + ' · votes cast ' + cast.toLocaleString() + (accredited && accredited.value !== '' ? ' · accredited ' + num(accredited).toLocaleString() : '');
+        var over = accredited && accredited.value !== '' && cast > num(accredited);
+        out.className = 'totals small' + (over ? ' bad' : '');
+        if (over) { out.textContent += ': more votes than accredited voters, check the figures.'; }
+      };
+      form.addEventListener('input', update);
     });
   }
 
@@ -540,7 +728,7 @@
     });
   }
 
-  function bindMain() { bindRows(); bindGuide(); bindQueue(); bindFilters(); bindPhotos(); bindPush(); bindBroadcastForm(); bindTownHall(); bindMaps(); }
+  function bindMain() { bindRows(); bindGuide(); bindQueue(); bindFilters(); bindPhotos(); bindFieldForms(); bindMediaInputs(); bindResultForms(); bindPush(); bindBroadcastForm(); bindTownHall(); bindMaps(); }
 
   // Install: Android/desktop Chrome prompt, and a Home Screen guide on iPhone.
   var deferred = null;
@@ -581,4 +769,6 @@
   flushQueue();
   countPhotos();
   flushPhotos();
+  countForms();
+  flushForms();
 })();

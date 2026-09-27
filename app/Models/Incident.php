@@ -17,8 +17,13 @@ class Incident extends Model
 
     protected $fillable = [
         'reference', 'polling_unit_code', 'lga', 'ward', 'type', 'type_label', 'urgent',
-        'note', 'agent_name', 'agent_phone', 'reported_at', 'rehearsal',
+        'note', 'agent_name', 'agent_phone', 'reported_at', 'rehearsal', 'channel',
     ];
+
+    public function channelLabel(): string
+    {
+        return $this->channel === 'web' ? 'Web app' : 'USSD';
+    }
 
     protected static function booted(): void
     {

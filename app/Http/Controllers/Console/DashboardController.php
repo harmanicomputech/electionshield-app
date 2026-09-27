@@ -8,7 +8,10 @@ use App\Services\Collation;
 use App\Services\LgaMap;
 use App\Services\PuMonitor;
 use App\Services\SpreadTracker;
+use App\Support\Permission;
 use App\Support\Settings;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 /**
@@ -16,8 +19,12 @@ use Illuminate\View\View;
  */
 class DashboardController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View|RedirectResponse
     {
+        if ($request->user()->cannot(Permission::VIEW_DASHBOARDS)) {
+            return $request->user()->can(Permission::SUBMIT_FIELD_REPORTS) ? redirect()->route('field') : redirect()->route('account');
+        }
+
         $rehearsal = Settings::showingRehearsal();
         $collation = new Collation($rehearsal);
         $state = $collation->state();

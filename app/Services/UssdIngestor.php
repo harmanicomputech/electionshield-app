@@ -84,6 +84,7 @@ class UssdIngestor
                 'corrects_reference' => $data['corrects_reference'] ?? $result->corrects_reference,
                 'agent_name' => Arr::get($data, 'agent.name'),
                 'agent_phone' => Arr::get($data, 'agent.phone_number'),
+                'channel' => Arr::get($data, 'channel') === 'web' ? 'web' : 'ussd',
                 'submitted_at' => Time::parse($data['submitted_at'] ?? null),
                 'reviewed_at' => Time::parse($data['reviewed_at'] ?? null) ?? $result->reviewed_at,
                 'reviewed_by' => $data['reviewed_by'] ?? $result->reviewed_by,
@@ -131,6 +132,7 @@ class UssdIngestor
             'note' => $data['note'] ?? null,
             'agent_name' => Arr::get($data, 'agent.name'),
             'agent_phone' => Arr::get($data, 'agent.phone_number'),
+            'channel' => Arr::get($data, 'channel') === 'web' ? 'web' : 'ussd',
             'reported_at' => Time::parse($data['reported_at'] ?? null),
             'rehearsal' => $rehearsal ?? ($incident->exists ? $incident->rehearsal : false),
         ])->save();
@@ -154,6 +156,7 @@ class UssdIngestor
             'status_label' => $data['status_label'] ?? null,
             'agent_name' => Arr::get($data, 'agent.name'),
             'agent_phone' => Arr::get($data, 'agent.phone_number'),
+            'channel' => Arr::get($data, 'channel') === 'web' ? 'web' : 'ussd',
             'reported_at' => Time::parse($data['reported_at'] ?? null),
             'rehearsal' => $rehearsal ?? ($report->exists ? $report->rehearsal : false),
         ])->save();
@@ -175,6 +178,7 @@ class UssdIngestor
             'ward' => $unit['ward'] ?? $presence->ward,
             'agent_name' => Arr::get($data, 'agent.name'),
             'agent_phone' => Arr::get($data, 'agent.phone_number'),
+            'channel' => Arr::get($data, 'channel') === 'web' ? 'web' : 'ussd',
             'confirmed_at' => Time::parse($data['confirmed_at'] ?? null),
             'rehearsal' => $rehearsal ?? ($presence->exists ? $presence->rehearsal : false),
         ])->save();

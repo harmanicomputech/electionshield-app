@@ -15,7 +15,7 @@ class Result extends Model
         'reference', 'status', 'polling_unit_code', 'lga', 'ward',
         'accredited_voters', 'total_valid_votes', 'rejected_votes', 'total_votes_cast',
         'corrects_reference', 'agent_name', 'agent_phone',
-        'submitted_at', 'reviewed_at', 'reviewed_by', 'review_note', 'rehearsal',
+        'submitted_at', 'reviewed_at', 'reviewed_by', 'review_note', 'rehearsal', 'channel', 'acknowledged_at', 'acknowledged_by',
     ];
 
     protected static function booted(): void
@@ -29,8 +29,14 @@ class Result extends Model
             'status' => ResultStatus::class,
             'submitted_at' => 'datetime',
             'reviewed_at' => 'datetime',
+            'acknowledged_at' => 'datetime',
             'rehearsal' => 'boolean',
         ];
+    }
+
+    public function channelLabel(): string
+    {
+        return $this->channel === 'web' ? 'Web app' : 'USSD';
     }
 
     public function votes(): HasMany

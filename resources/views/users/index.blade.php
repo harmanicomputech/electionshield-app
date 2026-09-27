@@ -5,7 +5,7 @@
 @section('content')
 <div class="page-head">
     <h1>Users</h1>
-    <p class="muted">Admins manage users and the USSD connection. Coordinators see the dashboards.</p>
+    <p class="muted">Staff sign in with email and password; what each person can do comes from their role (<a href="{{ route('roles') }}">edit roles</a>). Agents sign in with their phone number and USSD PIN: manage them on the <a href="{{ route('agents') }}">Agents page</a>{{ $agentAccounts ? " ({$agentAccounts} have signed in)" : '' }}.</p>
 </div>
 
 <section class="card">
@@ -19,8 +19,8 @@
         @error('email')<div class="field-error">{{ $message }}</div>@enderror
         <label for="role">Role</label>
         <select id="role" name="role">
-            @foreach (\App\Enums\UserRole::cases() as $role)
-                <option value="{{ $role->value }}" @selected(old('role', 'coordinator') === $role->value)>{{ $role->label() }}</option>
+            @foreach ($roles as $role)
+                <option value="{{ $role->key }}" @selected(old('role', 'coordinator') === $role->key)>{{ $role->name }}</option>
             @endforeach
         </select>
         <label for="lga">Home LGA (alerts and default filters)</label>
@@ -42,7 +42,7 @@
                 @foreach ($users as $user)
                     <tr>
                         <td class="key"><b>{{ $user->name }}</b><span class="muted small" style="display:block">{{ $user->email }}</span></td>
-                        <td data-label="Role"><span class="badge">{{ $user->role->label() }}</span> <span class="muted small">{{ $user->lga ?? 'state-wide' }}</span></td>
+                        <td data-label="Role"><span class="badge">{{ $user->roleName() }}</span> <span class="muted small">{{ $user->lga ?? 'state-wide' }}</span></td>
                         <td data-label="Last login">{{ $user->last_login_at ? \App\Support\Time::local($user->last_login_at, 'j M, g:i A') : 'never' }}</td>
                         <td data-label="Change">
                             <details>
@@ -51,8 +51,8 @@
                                     @csrf @method('put')
                                     <label for="role-{{ $user->id }}">Role</label>
                                     <select id="role-{{ $user->id }}" name="role">
-                                        @foreach (\App\Enums\UserRole::cases() as $role)
-                                            <option value="{{ $role->value }}" @selected($user->role === $role)>{{ $role->label() }}</option>
+                                        @foreach ($roles as $role)
+                                            <option value="{{ $role->key }}" @selected($user->role === $role->key)>{{ $role->name }}</option>
                                         @endforeach
                                     </select>
                                     <label for="lga-{{ $user->id }}">Home LGA</label>

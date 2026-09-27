@@ -1,14 +1,15 @@
 /*
  * Election Shield service worker.
  * - App shell (CSS, JS, icons, offline page): cache first, for an instant start.
- * - Data pages (dashboard, 25% tracker, collation, PU monitoring): network first, falling back
- *   to the last copy seen; the page itself shows how old its data is.
+ * - Data pages (dashboard, 25% tracker, collation, PU monitoring, and the agent pages): network
+ *   first, falling back to the last copy seen; the page itself shows how old its data is.
  * - Nothing else is cached (login, admin pages, anything with phone numbers).
  * - The page cache is cleared on logout.
  * - EC8A photos taken offline wait in IndexedDB ('es-queue' → 'photos',
- *   written by app.js) and are sent on the 'es-photos' Background Sync.
+ *   written by app.js) and are sent on the 'es-photos' Background Sync; agents'
+ *   reports (with photos and videos) wait in 'forms' and go on 'es-forms'.
  */
-const VERSION = 'v4';
+const VERSION = 'v5';
 const SHELL = `es-shell-${VERSION}`;
 const PAGES = 'es-pages';
 const SHELL_FILES = [
@@ -21,7 +22,7 @@ const SHELL_FILES = [
   '/icons/icon-32.png',
 ];
 // Never the incident feed: it shows agents' phone numbers.
-const DATA_PAGES = [/^\/$/, /^\/spread$/, /^\/collation(\/.*)?$/, /^\/monitor(\/.*)?$/];
+const DATA_PAGES = [/^\/$/, /^\/spread$/, /^\/collation(\/.*)?$/, /^\/monitor(\/.*)?$/, /^\/field(\/(result|incident|history))?$/];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(SHELL).then((cache) => cache.addAll(SHELL_FILES)).then(() => self.skipWaiting()));
@@ -100,21 +101,30 @@ self.addEventListener('sync', (event) => {
   if (event.tag === 'es-photos') {
     event.waitUntil(sendQueuedPhotos());
   }
+  if (event.tag === 'es-forms') {
+    event.waitUntil(sendQueuedForms());
+  }
 });
 
 function queueDb() {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open('es-queue', 1);
-    request.onupgradeneeded = () => request.result.createObjectStore('photos', { keyPath: 'id' });
+    const request = indexedDB.open('es-queue', 2);
+    request.onupgradeneeded = () => {
+      for (const name of ['photos', 'forms']) {
+        if (!request.result.objectStoreNames.contains(name)) {
+          request.result.createObjectStore(name, { keyPath: 'id' });
+        }
+      }
+    };
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
   });
 }
 
-function onStore(db, mode, fn) {
+function onStore(db, mode, fn, name = 'photos') {
   return new Promise((resolve, reject) => {
-    const tx = db.transaction('photos', mode);
-    const request = fn(tx.objectStore('photos'));
+    const tx = db.transaction(name, mode);
+    const request = fn(tx.objectStore(name));
     tx.oncomplete = () => resolve(request ? request.result : undefined);
     tx.onerror = () => reject(tx.error);
   });
@@ -137,6 +147,27 @@ async function sendQueuedPhotos() {
     }
 
     await onStore(db, 'readwrite', (store) => store.delete(item.id));
+  }
+}
+
+// Agents' reports saved offline by app.js (fields plus photos and videos).
+// A 419 (expired session) waits for the page, which sends the current token.
+async function sendQueuedForms() {
+  const db = await queueDb();
+  const items = await onStore(db, 'readonly', (store) => store.getAll(), 'forms');
+
+  for (const item of items || []) {
+    const data = new FormData();
+    item.fields.forEach(([key, value]) => data.append(key, value));
+    item.files.forEach((file) => data.append(file.field, file.blob, file.filename));
+
+    const response = await fetch(item.url, { method: 'POST', credentials: 'same-origin', headers: { Accept: 'application/json' }, body: data });
+
+    if (response.status >= 500 || response.status === 419) {
+      throw new Error('Retry later');
+    }
+
+    await onStore(db, 'readwrite', (store) => store.delete(item.id), 'forms');
   }
 }
 

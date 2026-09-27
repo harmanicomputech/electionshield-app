@@ -16,7 +16,9 @@
 
 <section class="card">
     <h2>Upload a photo</h2>
+@can('review_media')
     @include('partials.photo-form', ['action' => route('photos.store'), 'withReference' => true, 'withNote' => true, 'reference' => $reference])
+@endcan
 </section>
 
 <nav class="tabs" aria-label="Review status">

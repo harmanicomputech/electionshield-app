@@ -2,18 +2,22 @@
 
 namespace App\Http\Controllers\Console;
 
-use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Models\PollingUnit;
 use App\Models\PushSubscription;
+use App\Models\Role;
 use App\Models\User;
 use App\Services\PollingUnitImporter;
+use App\Services\UssdApi;
+use App\Services\UssdIngestor;
 use App\Support\Audit;
+use App\Support\Phone;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
 use Throwable;
@@ -65,6 +69,61 @@ class AuthController extends Controller
         return redirect()->intended(route('dashboard'));
     }
 
+    /**
+     * Polling agents sign in with their phone number and the PIN they use on
+     * USSD. The USSD service checks the PIN (wrong ones count towards its
+     * lock-out); the agent's account here is made on their first sign-in.
+     */
+    public function agentLogin(Request $request, UssdApi $api, UssdIngestor $ingestor): RedirectResponse
+    {
+        $validated = $request->validate([
+            'phone' => ['required', 'string', 'max:20'],
+            'pin' => ['required', 'string', 'max:10'],
+        ]);
+        $phone = Phone::normalize($validated['phone']);
+        $back = fn (string $message) => back()->withInput($request->only('phone'))->withErrors(['phone' => $message]);
+
+        if ($phone === null) {
+            return $back('Enter your phone number, for example 0803 123 4567.');
+        }
+
+        if (! $api->enabled()) {
+            return $back('Agent sign-in is not connected yet. Ask an admin to set USSD_API_TOKEN.');
+        }
+
+        try {
+            $response = $api->post('agents/verify-pin', ['phone_number' => $phone, 'pin' => $validated['pin']]);
+        } catch (Throwable $e) {
+            report($e);
+
+            return $back('Could not reach the USSD service. Check your connection and try again.');
+        }
+
+        if (! $response->successful()) {
+            Audit::record('auth.failed', "Failed agent sign-in for {$phone}", actor: 'Unknown');
+
+            return $back((string) ($response->json('message') ?: 'Could not sign you in ('.$response->status().').'));
+        }
+
+        $agent = $ingestor->agent($response->json('agent'));
+        $user = User::query()->where('phone', $agent->phone_number)->first();
+
+        if ($user && ! $user->isAgent()) {
+            return $back('This phone number belongs to a staff account. Log in with your email and password.');
+        }
+
+        $user ??= new User(['role' => Role::AGENT, 'phone' => $agent->phone_number, 'password' => Str::random(40)]);
+        $user->name = $agent->name ?: $agent->phone_number;
+        $user->save();
+
+        Auth::login($user, remember: true);
+        $request->session()->regenerate();
+        $user->forceFill(['last_login_at' => now()])->save();
+        Audit::record('auth.login', 'Agent signed in');
+
+        return redirect()->route('field');
+    }
+
     public function setup(Request $request): RedirectResponse
     {
         $key = (string) config('election.admin_password');
@@ -98,7 +157,7 @@ class AuthController extends Controller
             'name' => $validated['name'],
             'email' => strtolower($validated['email']),
             'password' => $validated['password'],
-            'role' => UserRole::Admin,
+            'role' => Role::ADMIN,
         ]);
 
         // The PU register ships with the app, so the boards work before
