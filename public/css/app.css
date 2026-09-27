@@ -231,6 +231,9 @@ dl.kv dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
 
 /* PU and incident cards */
 .list { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.list > * { min-width: 0; }
+.item table { max-width: 100%; }
+.item .compact th, .item .compact td { padding-left: 6px; padding-right: 6px; }
 @media (min-width: 1024px) { .list.two { grid-template-columns: 1fr 1fr; } }
 .item { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
 .item.urgent { border-left: 4px solid var(--bad); }

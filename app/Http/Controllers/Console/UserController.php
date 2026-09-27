@@ -99,6 +99,6 @@ class UserController extends Controller
 
     private function staffRoles()
     {
-        return Role::query()->where('key', '!=', Role::AGENT)->orderByRaw("key = 'admin' desc")->orderBy('name')->get();
+        return Role::query()->where('key', '!=', Role::AGENT)->get()->sortBy(fn (Role $role) => [! $role->isAdmin(), $role->name])->values();
     }
 }

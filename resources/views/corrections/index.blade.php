@@ -8,7 +8,7 @@
 @endphp
 <div class="page-head">
     <h1>Corrections</h1>
-    <p class="muted">Agents who made a mistake send a corrected result by USSD. It counts only once approved here, and then replaces the original.</p>
+    <p class="muted">Agents who made a mistake send a corrected result by USSD or the web app. It counts only once approved here, and then replaces the original.</p>
 </div>
 
 @unless ($connected)

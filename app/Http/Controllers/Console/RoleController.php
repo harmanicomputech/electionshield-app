@@ -23,7 +23,8 @@ class RoleController extends Controller
         Role::ensureDefaults();
 
         return view('roles.index', [
-            'roles' => Role::query()->withCount('users')->orderByRaw("key = 'admin' desc")->orderByDesc('system')->orderBy('name')->get(),
+            // Admin first, then the built-in roles, then the rest by name.
+            'roles' => Role::query()->withCount('users')->get()->sortBy(fn (Role $role) => [! $role->isAdmin(), ! $role->system, $role->name])->values(),
             'groups' => Permission::groups(),
         ]);
     }
