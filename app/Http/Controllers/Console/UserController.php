@@ -23,7 +23,7 @@ class UserController extends Controller
     public function index(): View
     {
         return view('users.index', [
-            'users' => User::query()->with('roleModel')->where('role', '!=', Role::AGENT)->orderBy('name')->get(),
+            'users' => User::query()->where('role', '!=', Role::AGENT)->orderBy('name')->get(),
             'agentAccounts' => User::query()->where('role', Role::AGENT)->count(),
             'roles' => $this->staffRoles(),
             'lgas' => PollingUnit::query()->whereNotNull('lga')->distinct()->orderBy('lga')->pluck('lga'),
@@ -75,7 +75,6 @@ class UserController extends Controller
         }
 
         $user->save();
-        $user->unsetRelation('roleModel');
         Audit::record('user.updated', "Updated {$user->name}: {$user->roleName()}, ".($user->lga ?? 'state-wide').(filled($validated['password'] ?? null) ? ', new password' : ''));
 
         return back()->with('status', "Saved {$user->name}.");

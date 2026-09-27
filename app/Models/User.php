@@ -55,12 +55,12 @@ class User extends Authenticatable
 
     public function roleName(): string
     {
-        return $this->roleModel?->name ?? ucfirst((string) $this->role);
+        return Role::forKey($this->role)?->name ?? ucfirst((string) $this->role);
     }
 
     public function hasPermission(string $permission): bool
     {
-        return $this->isAdmin() || ($this->roleModel?->allows($permission) ?? false);
+        return $this->isAdmin() || (Role::forKey($this->role)?->allows($permission) ?? false);
     }
 
     /**

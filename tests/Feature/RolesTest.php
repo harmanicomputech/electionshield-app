@@ -7,6 +7,7 @@ use App\Models\Role;
 use App\Models\User;
 use App\Support\Permission;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 class RolesTest extends TestCase
@@ -104,5 +105,19 @@ class RolesTest extends TestCase
 
         $this->put("/users/{$admin->id}", ['role' => 'coordinator'])->assertSessionHas('error');
         $this->post('/users', ['name' => 'Agent?', 'email' => 'a@example.com', 'role' => 'agent', 'password' => 'long-enough-password'])->assertSessionHasErrors('role');
+    }
+
+    public function test_pages_work_before_the_database_update_so_it_can_be_pressed(): void
+    {
+        // New files uploaded, Update database not yet pressed: no roles table.
+        Schema::drop('roles');
+        $this->actingAs(User::factory()->admin()->create());
+
+        $this->get('/system')->assertOk()->assertSee('Update database');
+
+        $coordinator = User::factory()->create();
+        $this->assertTrue($coordinator->can(Permission::RESPOND_INCIDENTS));
+        $this->assertFalse($coordinator->can(Permission::MANAGE_USERS));
+        $this->assertSame('Coordinator', $coordinator->roleName());
     }
 }
