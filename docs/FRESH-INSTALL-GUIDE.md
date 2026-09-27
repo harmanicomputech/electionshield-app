@@ -9,11 +9,7 @@ Allow about 30–45 minutes. Do the parts in order: A (USSD) first, then B (web 
 | File | For | Size |
 | --- | --- | --- |
 | `0-election-shield-USSD-changed-files.zip` | USSD service: 9 changed files | tiny |
-| `1-election-shield-web-FRESH-app.zip` | Web app: the application and `public_html`, with a ready-made `.env` | 0.4 MB |
-| `2-election-shield-web-FRESH-vendor-a-to-l.zip` | Web app: libraries, part 1 of 2 | 16 MB |
-| `3-election-shield-web-FRESH-vendor-m-to-z.zip` | Web app: libraries, part 2 of 2 | 14 MB |
-
-The web app is split into three zips because the full package is larger than 30 MB. The three zips unpack into the same folders and together make the complete package.
+| `election-shield-web-FRESH-complete.zip` | Web app: everything (the application, its libraries and `public_html`), with a ready-made `.env` | 24 MB |
 
 **Keep the web app's `.env` private.** It is already filled in with your settings: the web address, your database details, the tokens that connect it to the USSD service, and the same app key as before, so your cron-job.org pinger address does not change.
 
@@ -65,8 +61,8 @@ The new version creates its tables itself, so the database must be empty.
 ### B3. Upload and extract (10 minutes)
 
 1. In File Manager, open `domains/electionshield.techatronagency.com/`.
-2. **Upload all three web zips** there (`1-…app.zip`, `2-…vendor-a-to-l.zip`, `3-…vendor-m-to-z.zip`).
-3. **Extract each one in that same folder**, in any order. Overwrite if asked.
+2. **Upload** `election-shield-web-FRESH-complete.zip` there.
+3. **Extract** it in that same folder. Overwrite if asked.
 4. Check the layout. It must look like this, with `election-shield-web` **next to** `public_html`, not inside it:
 
    ```
@@ -76,7 +72,7 @@ The new version creates its tables itself, so the database must be empty.
    ```
 
    `.env`, `.htaccess` and `.user.ini` are hidden files. Turn on **Show hidden files** in File Manager if you can't see them.
-5. Delete the three zips from the server.
+5. Delete the zip from the server.
 
 ### B4. Check the settings (5 minutes)
 
