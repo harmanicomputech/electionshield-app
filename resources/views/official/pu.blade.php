@@ -66,11 +66,38 @@
 
 <section class="card">
     <h2>{{ $official ? 'IReV result' : 'Enter the IReV result' }}</h2>
-    @if ($official)<p class="small muted">Last saved by {{ $official->entered_by }}, {{ \App\Support\Time::local($official->updated_at, 'j M, g:i A') }} ({{ $official->source }}).</p>@endif
+    @if ($official)<p class="small muted">Last saved by {{ $official->entered_by }}, {{ \App\Support\Time::local($official->updated_at, 'j M, g:i A') }} ({{ $official->source }}).@if ($official->sheet_path) <a href="{{ route('official.pu.sheet', $unit->code) }}" target="_blank" rel="noopener">View the sheet it was read from</a> (SHA-256 {{ \Illuminate\Support\Str::limit($official->sheet_sha256, 16, '…') }}).@endif</p>@endif
     <p class="small muted">Type the figures exactly as on the result sheet in IReV. Our agent's figures are shown only after saving, so they can't sway the entry.</p>
 @can('manage_official_results')
+    <details class="ai-read" @if (! $official && ! $reading) open @endif>
+        <summary><b>✨ Read the sheet with AI</b> <span class="muted small">Upload the IReV sheet (or paste its link) and the figures are filled in below for you to check.</span></summary>
+        @if ($reader)
+            <form method="post" action="{{ route('official.pu.read', $unit->code) }}" enctype="multipart/form-data" data-busy="Reading the sheet… (about 10–30 seconds)">
+                @csrf
+                <label for="sheet_file">Result sheet (JPEG, PNG or PDF from IReV)</label>
+                <input id="sheet_file" type="file" name="sheet_file" accept="image/*,application/pdf">
+                <label for="sheet_url">or the sheet's link on IReV</label>
+                <input id="sheet_url" type="url" name="sheet_url" placeholder="https://…" value="{{ old('sheet_url') }}">
+                @error('sheet_file')<div class="field-error">{{ $message }}</div>@enderror
+                @error('sheet_url')<div class="field-error">{{ $message }}</div>@enderror
+                <p></p>
+                <button class="button secondary" type="submit">Read the figures</button>
+            </form>
+        @else
+            <p class="small">To switch this on, add <code>ANTHROPIC_API_KEY</code> (from console.anthropic.com) to <code>.env</code>. Reading a sheet costs about 1–3 US cents of API credit.</p>
+        @endif
+    </details>
+
+    @if ($reading)
+        <div class="flash warn" role="status">
+            <b>AI read these figures. Check each one against the sheet before you press Save.</b>
+            @foreach ($reading['warnings'] as $warning)<br>⚠ {{ $warning }}@endforeach
+        </div>
+    @endif
+
     <form method="post" action="{{ route('official.pu.update', $unit->code) }}">
         @csrf @method('put')
+        @if (old('sheet'))<input type="hidden" name="sheet" value="{{ old('sheet') }}">@endif
         <label class="inline"><input type="radio" name="irev_status" value="uploaded" @checked($uploaded)> Result sheet is on IReV</label>
         <label class="inline"><input type="radio" name="irev_status" value="not_uploaded" @checked(! $uploaded)> No upload on IReV for this PU</label>
 

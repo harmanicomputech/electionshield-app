@@ -111,6 +111,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/compare', [CompareController::class, 'index'])->name('compare');
         Route::get('/official', [OfficialResultController::class, 'index'])->name('official');
         Route::get('/official/pu/{code}', [OfficialResultController::class, 'edit'])->name('official.pu');
+        Route::get('/official/pu/{code}/sheet', [OfficialResultController::class, 'sheet'])->name('official.pu.sheet');
         Route::get('/official/collations', [OfficialCollationController::class, 'index'])->name('official.collations');
         Route::get('/official/collations/{level}/{lga}/{ward?}', [OfficialCollationController::class, 'edit'])->name('official.collation');
     });
@@ -152,6 +153,7 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware('can:'.Permission::MANAGE_OFFICIAL_RESULTS)->group(function () {
         Route::put('/official/pu/{code}', [OfficialResultController::class, 'update'])->name('official.pu.update');
+        Route::post('/official/pu/{code}/read', [OfficialResultController::class, 'read'])->middleware('throttle:20,1')->name('official.pu.read');
         Route::put('/official/collations/{level}/{lga}/{ward?}', [OfficialCollationController::class, 'update'])->name('official.collation.update');
         Route::get('/official/import', [OfficialImportController::class, 'show'])->name('official.import');
         Route::post('/official/import', [OfficialImportController::class, 'store'])->name('official.import.store');

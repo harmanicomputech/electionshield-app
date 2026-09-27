@@ -477,3 +477,6 @@ input[type=file]::file-selector-button { min-height: 44px; padding: 0 16px; marg
 .alert-pop .pop-resolve textarea { width: 100%; }
 .alert-pop .pop-state:empty { display: none; }
 @media print { .alert-pop { display: none !important; } }
+.ai-read { border: 1px dashed var(--line); border-radius: 10px; padding: 10px 12px; margin: 0 0 12px; }
+.ai-read summary { cursor: pointer; }
+.ai-read summary .muted { display: block; }

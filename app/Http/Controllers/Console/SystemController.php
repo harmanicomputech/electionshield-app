@@ -10,6 +10,7 @@ use App\Models\Result;
 use App\Models\SyncState;
 use App\Models\WebhookEvent;
 use App\Services\DataMaintenance;
+use App\Services\FieldMedia;
 use App\Services\PollingUnitImporter;
 use App\Services\PushNotifier;
 use App\Services\UssdIngestor;
@@ -38,6 +39,8 @@ class SystemController extends Controller
         $heartbeat = Settings::get('scheduler_heartbeat');
 
         return view('system.show', [
+            'uploadMb' => FieldMedia::serverLimitMb(),
+            'videoMb' => (int) config('election.media.max_video_mb'),
             'webhookUrl' => url('/api/ussd-events'),
             'webhookConfigured' => filled(config('services.ussd.webhook_token')) && filled(config('services.ussd.webhook_secret')),
             'apiConfigured' => $sync->enabled(),

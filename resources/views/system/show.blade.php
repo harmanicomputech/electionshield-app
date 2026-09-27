@@ -141,6 +141,18 @@
     </section>
 
     <section class="card">
+        <h2>Agents' photos, videos and AI</h2>
+        <dl class="kv small">
+            <dt>Largest upload</dt>
+            <dd>{!! $uploadMb >= $videoMb ? '<span class="badge good">✓ '.$uploadMb.' MB</span>' : '<span class="badge warn">'.$uploadMb.' MB</span>' !!} <span class="muted">videos up to {{ $videoMb }} MB are allowed{{ $uploadMb < $videoMb ? ': raise upload_max_filesize and post_max_size in DirectAdmin → PHP settings (public_html/.user.ini asks for 128 MB)' : '' }}</span></dd>
+            <dt>Reading IReV sheets with AI</dt>
+            <dd>{!! filled(config('services.anthropic.key')) ? '<span class="badge good">✓ On</span>' : '<span class="badge">Off</span>' !!} <span class="muted">{{ filled(config('services.anthropic.key')) ? config('services.anthropic.model') : 'set ANTHROPIC_API_KEY in .env' }}</span></dd>
+            <dt>Agent sign-in</dt>
+            <dd>{!! app(\App\Services\UssdApi::class)->enabled() ? '<span class="badge good">✓ Through the USSD service</span>' : '<span class="badge bad">✗ Set USSD_API_TOKEN</span>' !!}</dd>
+        </dl>
+    </section>
+
+    <section class="card">
         <h2>After uploading a new version</h2>
         <p class="small">Bring the database up to date. It is safe to press at any time.</p>
         <form method="post" action="{{ route('system.migrate') }}">@csrf<button class="button secondary" type="submit">Update database</button></form>

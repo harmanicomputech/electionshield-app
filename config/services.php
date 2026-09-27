@@ -79,4 +79,16 @@ return [
         'api_version' => env('WHATSAPP_API_VERSION', 'v21.0'),
     ],
 
+    // Reading IReV / EC8A result sheets with Claude (Official vs PVT).
+    'anthropic' => [
+        'key' => env('ANTHROPIC_API_KEY'),
+        'model' => env('ANTHROPIC_MODEL', 'claude-opus-5'),
+        'base_url' => env('ANTHROPIC_BASE_URL'),
+    ],
+
+    // Hosts the server may download IReV result sheets from (a pasted link).
+    'irev' => [
+        'document_hosts' => array_values(array_filter(array_map('trim', explode(',', (string) env('IREV_DOCUMENT_HOSTS', 'inecelectionresults.ng,inecelectionresults.net,amazonaws.com,cloudfront.net'))))),
+    ],
+
 ];

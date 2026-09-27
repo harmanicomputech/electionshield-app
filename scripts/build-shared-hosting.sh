@@ -40,7 +40,7 @@ rm -f "$BUILD/$APP/bootstrap/cache/"*.php
 # shared-hosting front controller, which finds the app folder outside it.
 (cd "$ROOT/public" && git -C "$ROOT" ls-files -z --cached --others --exclude-standard public | sed -z 's#^public/##' \
   | while IFS= read -r -d '' file; do cp --parents "$file" "$BUILD/public_html"; done)
-cp "$ROOT/deploy/shared-hosting/"{index.php,.htaccess,robots.txt} "$BUILD/public_html/"
+cp "$ROOT/deploy/shared-hosting/"{index.php,.htaccess,.user.ini,robots.txt} "$BUILD/public_html/"
 
 $UPDATE || php -r '
     $env = file_get_contents($argv[1]);

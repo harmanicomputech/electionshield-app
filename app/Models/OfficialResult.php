@@ -16,7 +16,7 @@ class OfficialResult extends Model
 
     protected $fillable = [
         'polling_unit_code', 'lga', 'ward', 'irev_status', 'accredited_voters', 'votes',
-        'rejected_votes', 'source', 'note', 'entered_by',
+        'rejected_votes', 'source', 'note', 'entered_by', 'sheet_path', 'sheet_sha256',
     ];
 
     protected function casts(): array

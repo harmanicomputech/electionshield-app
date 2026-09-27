@@ -180,6 +180,16 @@
     });
   }
 
+  // Slow forms (reading a sheet with AI) say so and can't be sent twice.
+  function bindBusyForms() {
+    document.querySelectorAll('form[data-busy]').forEach(function (form) {
+      form.addEventListener('submit', function () {
+        var button = form.querySelector('button[type=submit]');
+        if (button) { button.disabled = true; button.textContent = form.getAttribute('data-busy'); }
+      });
+    });
+  }
+
   // Filters apply as soon as they change (the Filter button is the no-JS path).
   function bindFilters() {
     document.querySelectorAll('[data-autosubmit]').forEach(function (input) {
@@ -728,7 +738,7 @@
     });
   }
 
-  function bindMain() { bindRows(); bindGuide(); bindQueue(); bindFilters(); bindPhotos(); bindFieldForms(); bindMediaInputs(); bindResultForms(); bindPush(); bindBroadcastForm(); bindTownHall(); bindMaps(); }
+  function bindMain() { bindRows(); bindGuide(); bindQueue(); bindFilters(); bindBusyForms(); bindPhotos(); bindFieldForms(); bindMediaInputs(); bindResultForms(); bindPush(); bindBroadcastForm(); bindTownHall(); bindMaps(); }
 
   // Install: Android/desktop Chrome prompt, and a Home Screen guide on iPhone.
   var deferred = null;
