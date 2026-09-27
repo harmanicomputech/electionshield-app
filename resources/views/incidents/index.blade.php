@@ -16,7 +16,7 @@
 @section('content')
 <div class="page-head">
     <h1>Incidents</h1>
-    <p class="muted">Reported by agents on USSD. Urgent ones also text the coordinators. @if ($urgentOpen)<b>{{ $urgentOpen }} urgent {{ $urgentOpen === 1 ? 'incident needs' : 'incidents need' }} acknowledging.</b>@endif</p>
+    <p class="muted">Reported by agents by USSD or the web app. Urgent ones also text the coordinators. @if ($urgentOpen)<b>{{ $urgentOpen }} urgent {{ $urgentOpen === 1 ? 'incident needs' : 'incidents need' }} acknowledging.</b>@endif</p>
 </div>
 
 <nav class="tabs" aria-label="Status">

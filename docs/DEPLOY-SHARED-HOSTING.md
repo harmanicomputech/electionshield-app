@@ -92,6 +92,14 @@ Under **Users**, give each coordinator their own account. Admins manage users an
 
 On phones: open the site in Chrome and press **Install app** (Android), or in Safari tap Share → **Add to Home Screen** (iPhone).
 
+## Agents' photos and videos
+
+Agents can attach videos of up to 100 MB. The package's `public_html/.user.ini` asks PHP for a 128 MB upload limit; the System page shows the limit actually in force. If it is lower, raise `upload_max_filesize` and `post_max_size` in DirectAdmin → PHP settings (or ask the host). Videos use disk space quickly: a 50 MB clip per incident × 500 incidents is 25 GB, so check your plan.
+
+## Reading IReV sheets with AI (optional)
+
+Create an API key at console.anthropic.com, put it in `.env` as `ANTHROPIC_API_KEY=`, and the **Read the sheet with AI** box appears on each PU's official result page. Reading one sheet costs about 1–3 US cents.
+
 ## EC8A photos and disk space
 
 Photos are stored in `election-shield-web/storage/app/private/ec8a/`, outside the web root, and are shown only to logged-in users. Each is about 100–500 KB after the phone shrinks it, so photos of all 3,308 PUs need roughly 1–2 GB. Check your hosting plan's disk quota before election day, and back up that folder with the database afterwards, as it is evidence.

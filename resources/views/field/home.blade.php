@@ -57,6 +57,6 @@
         </section>
     </div>
 
-    <p class="small muted" style="margin-top:16px">No network? Keep going: what you send is saved on this phone and goes out when the network returns. You can also still use USSD ({{ config('services.ussd.service_code') ?: 'the USSD code' }}).</p>
+    <p class="small muted" style="margin-top:16px">No network? Keep going: what you send is saved on this phone and goes out when the network returns. You can also still dial {{ config('services.ussd.service_code') ?: 'the USSD code' }} on any phone.</p>
 @endunless
 @endsection

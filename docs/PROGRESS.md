@@ -2,11 +2,11 @@
 
 Where the project stands and what comes next. Update it whenever something is finished.
 
-Last updated: 25 September 2026 (deployed and connected to the USSD service).
+Last updated: 27 September 2026 (roles, agents in the web app, photos and videos, pop-ups, reading IReV sheets).
 
 ## Built so far
 
-All seven features in the brief (`docs/WEB-APP-HANDOFF.md`) are built and tested. There are 118 automated tests, and each feature was also checked in a real browser at phone (360px) and desktop width.
+All seven features in the brief (`docs/WEB-APP-HANDOFF.md`) are built and tested. There are 146 automated tests (plus 8 new ones in the USSD service), and each feature was also checked in a real browser at phone (360px) and desktop width.
 
 | # | Feature | Branch | Where in the app |
 | --- | --- | --- | --- |
@@ -20,6 +20,7 @@ All seven features in the brief (`docs/WEB-APP-HANDOFF.md`) are built and tested
 | 7 | Digital town hall: stream, moderated questions, presenter view, SMS reminder | `claude/town-hall` | `/townhall`, More → Town hall |
 | 10 | Election-day tools: Agents page with call links and silent-PU lists (no check-in / no result / no agent); clear rehearsal data and full backup (CSV zip); printable evidence pack per PU and one-page situation report; My account (name, password) and a home LGA per coordinator (their alerts and default filters) | `claude/election-day-tools` | Agents, System, Situation report, Evidence pack, My account, Users |
 | 9 | Schematic LGA map (25% share, results in, check-ins, incidents) on the Dashboard, PUs and Incidents pages; correction review in the web app through the USSD API, working offline | `claude/map-corrections` | Dashboard, PUs, Incidents, Corrections |
+| 11 | Editable roles and permissions (Roles page); agents added and PINs reset from the Agents page; agent sign-in with phone + USSD PIN and agent pages (check in, materials, result/correction, incidents) with photos and videos, working offline; pop-ups for new results and incidents (acknowledge, resolve, remind me, repeat every 5 minutes, channel and agent shown); photos & videos page; reading IReV sheets with AI. Needs the USSD service update (agent API, `channel`) from `harmanicomputech/claude` branch `claude/sharp-goodall-sgds39` | `claude/election-day-tools` | Roles, Agents, `/field`, pop-ups, Photos & videos, Official vs PVT → PU |
 | 8 | The PU register built in (3,308 PUs, 13 LGAs, 169 wards), loaded at first-admin setup; re-import or upload a newer CSV on the System page, or run `artisan pu:import`. Desktop sidebar navigation (grouped: Election day, Results, Engage, Admin), a top bar on tablets and a bottom tab bar on phones | `claude/pu-register` | System → Polling unit register |
 
 Branches 2–10 are **stacked**: each is built on the one before, so `claude/election-day-tools` contains everything. None of them is merged into `main` yet.
@@ -45,6 +46,15 @@ The upload package is built from `claude/election-day-tools` with `scripts/build
 **Smoke test after installing:** submit a test result and a test incident on the USSD sandbox (rehearsal mode). Within seconds they should appear on the Dashboard, PUs and Incidents pages, and the urgent incident should raise a push alert.
 
 Record any problem found here under "Issues from deployment", with the page and the message.
+
+## Update 11: installing it (both servers)
+
+1. **USSD service first:** upload its update package (from branch `claude/sharp-goodall-sgds39`) and press **Set up / update database** on its console's Overview page (adds `channel`). Its `.env` needs `ELECTION_API_TOKEN` (already set).
+2. **Web app:** upload the update package, then **System → Update database** (roles, attachments, pop-up tables).
+3. In the web app `.env`, add `USSD_SERVICE_CODE="*384*92342#"`, and `ANTHROPIC_API_KEY=` if you want AI sheet reading.
+4. System page → **Agents' photos, videos and AI**: check the largest upload is at least 100 MB (the package's `public_html/.user.ini` asks for 128 MB; otherwise raise it in DirectAdmin → PHP settings).
+5. **Roles page:** check what Coordinator and Observer may do; give people roles on **Users**.
+6. **Agents page:** add an agent (or reset an existing agent's PIN), then sign in as them at `/login?as=agent` on a phone and send a test result and incident with a photo. The pop-up should appear in the situation room within 20 seconds.
 
 ## Issues from deployment
 
@@ -72,6 +82,8 @@ All offered features are built. Still possible later:
 - Coordinators limited to seeing only their LGA's data (today the home LGA sets alerts and default filters; everyone with an account can see all LGAs).
 
 ## Decisions still open
+
+- **IReV automatic fetching:** INEC publishes no official API; IReV's own data feed is undocumented and was blocked from the build environment. To build a fetcher that pulls each PU's sheet by itself, allow `inecelectionresults.ng` and `*.execute-api.eu-west-2.amazonaws.com` in the Claude environment's network settings so the feed can be studied. Until then, sheets are read by AI from an upload or a pasted IReV link.
 
 - **Check the register data.** The bundled CSV (the same file as the USSD service's) totals 4,592,490 registered voters, about three times INEC's 2023 figure for Ebonyi (about 1.6 million), and its PU names look generic ("Open Space 001"). Turnout is worked out from these figures. If it is a placeholder, replace it with INEC's register on the System page (and in the USSD service); if not, confirm it.
 

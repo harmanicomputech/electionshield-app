@@ -142,7 +142,7 @@ class AgentPortalTest extends TestCase
         $record = ['reference' => 'IN200001', 'polling_unit' => $this->unit(), 'type' => 'violence', 'type_label' => 'Violence', 'urgent' => true, 'note' => 'Thugs chased voters', 'agent' => ['name' => 'Ada Obi', 'phone_number' => self::PHONE], 'channel' => 'web', 'reported_at' => now()->toIso8601String(), 'rehearsal' => false];
         Http::fake(['ussd.test/api/field/incidents' => Http::response(['message' => 'Incident logged. Ref: IN200001', 'incident' => $record], 201)]);
 
-        $this->get('/field/incident')->assertOk()->assertSee('Vote buying');
+        $this->get('/field/incident')->assertOk()->assertSee('Vote buying')->assertSee('Photos or videos (optional)');
         $this->post('/field/incident', ['type' => 'violence', 'note' => 'Thugs chased voters', 'media' => [UploadedFile::fake()->create('fight.mov', 5000, 'video/quicktime')]])
             ->assertRedirect('/field/history')->assertSessionHas('status', 'Incident logged. Ref: IN200001. With 1 video.');
 

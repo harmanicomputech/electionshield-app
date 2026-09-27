@@ -39,6 +39,7 @@ class AlertPopupTest extends TestCase
         $this->assertSame('Web app', $items[1]['channel']);
         $this->assertSame('Ada Obi', $items[1]['agent']);
         $this->assertSame(610, $items[1]['votes']['APC']);
+        $this->assertSame(['APC', 'PDP', 'LP', 'OTHERS'], array_keys($items[1]['votes']));
         $this->assertSame('Polling Unit 21202633007', $items[1]['place']);
     }
 

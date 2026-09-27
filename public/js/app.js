@@ -395,8 +395,9 @@
       }, Promise.resolve());
     }).catch(function () {}).then(function () {
       sendingForms = false;
-      countForms();
-      if (notes.length) { showQueue('Sent from this phone: ' + notes.join(' · ')); setTimeout(function () { showQueue(); }, 12000); }
+      countForms().then(function () {
+        if (notes.length) { showQueue('Sent from this phone: ' + notes.join(' · ')); setTimeout(function () { showQueue(); }, 12000); }
+      });
     });
   }
 
@@ -797,6 +798,8 @@
   }
 
   function chime(urgent) {
+    // Browsers only allow sound and vibration after the person has tapped the page.
+    if (navigator.userActivation && !navigator.userActivation.hasBeenActive) { return; }
     safe(function () { if (navigator.vibrate) { navigator.vibrate(urgent ? [300, 120, 300, 120, 300] : [150]); } });
     safe(function () {
       var Ctx = window.AudioContext || window.webkitAudioContext;

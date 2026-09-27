@@ -18,10 +18,10 @@
 
     <fieldset class="type-grid">
         <legend>What happened?</legend>
-        @foreach ($types as $value => $label)
+        @foreach ($types as $value => $typeLabel)
             <label class="type-option">
                 <input type="radio" name="type" value="{{ $value }}" @checked(old('type') === $value) required>
-                <span>{{ $label }}</span>
+                <span>{{ $typeLabel }}</span>
             </label>
         @endforeach
     </fieldset>

@@ -110,7 +110,7 @@ class AlertFeed
             'urgent' => false,
             'title' => $correction ? "Correction to {$result->corrects_reference}" : 'Result submitted',
             'heading' => $correction ? 'Correction waiting for review' : 'New result',
-            'votes' => $result->votes->pluck('votes', 'party')->map(fn ($votes) => (int) $votes)->all(),
+            'votes' => $this->ballotOrder($result->votes->pluck('votes', 'party')->map(fn ($votes) => (int) $votes)->all()),
             'accredited' => $result->accredited_voters,
             'rejected' => $result->rejected_votes,
             'code' => $result->polling_unit_code,
@@ -126,6 +126,20 @@ class AlertFeed
             'acknowledge' => route('results.acknowledge', $result->reference),
             'review' => $correction && $user->can(Permission::REVIEW_CORRECTIONS) ? route('corrections') : null,
         ];
+    }
+
+    /**
+     * JSON objects keep key order, so the pop-up lists parties as on the ballot.
+     *
+     * @param  array<string, int>  $votes
+     * @return array<string, int>
+     */
+    private function ballotOrder(array $votes): array
+    {
+        $order = array_flip(Collation::parties());
+        uksort($votes, fn (string $a, string $b) => ($order[$a] ?? PHP_INT_MAX) <=> ($order[$b] ?? PHP_INT_MAX) ?: strcmp($a, $b));
+
+        return $votes;
     }
 
     private function mediaCount(string $reference): int

@@ -51,3 +51,12 @@ The **Election Shield USSD service** (`harmanicomputech/claude`) is the source o
 - Never put a one-line `@php(...)` above a `@php … @endphp` block in the same view: Blade then swallows everything between them (a test guards this).
 - A Blade directive right after a letter (`arrived@if`) is not compiled; leave a space.
 - Tests use parties `APC,PDP,LP,OTHERS` and fake USSD credentials (see `phpunit.xml`); `tests/Concerns/SendsUssdEvents.php` signs webhook deliveries and builds payloads.
+
+## Roles, agents, media and pop-ups
+
+- **Permissions** (`app/Support/Permission.php`, `app/Models/Role.php`): every permission is a Gate ability (`AppServiceProvider`). Routes use `can:<permission>` middleware and views `@can`; never check `isAdmin()` for access. `users.role` holds the role key; the admin role always has everything; at least one admin must remain. New pages need a permission and a menu entry in `layouts/app.blade.php` (`$menu`).
+- **Agents** sign in at `/login?as=agent` with phone + USSD PIN (`AuthController::agentLogin` → USSD `POST /agents/verify-pin`). Their `User` has role `agent`, `phone` set and no email. The agent pages (`Field/FieldController`) send submissions through `FieldSubmitter` to the USSD service's `/field/*` API and ingest the returned record at once; never write results or incidents locally without the USSD service. Adding agents / resetting PINs: `Console/AgentAccountController` → USSD `/agents`.
+- **Media**: `FieldMedia` stores agents' files (result photos → `Ec8aPhotoStore`, everything else → `Attachment`); files are served by `MediaController::file` (staff, or the agent who sent them). `public_html/.user.ini` raises PHP's upload limit.
+- **Pop-ups**: `AlertFeed` (recent, unacknowledged, not snoozed by this person, home LGA, permissions) → `GET /alerts`, polled by app.js; `AlertSnooze` is per person. Results have `acknowledged_at/by`.
+- **IReV sheets**: `IrevSheetReader` uses the official Anthropic PHP SDK (`anthropic-ai/sdk`, beta messages with `fallbacks: 'default'` and a JSON schema); tests fake `ask()`. Pasted links are https on `IREV_DOCUMENT_HOSTS` only.
+- Blade: an `@include` inside a `@foreach` sees the loop's variables; don't name loop variables like the include's parameters (e.g. `$label`).
