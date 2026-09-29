@@ -44,7 +44,7 @@
             ['monitor', 'Polling units', $icon['monitor'], ['monitor', 'monitor.*'], \App\Support\Permission::VIEW_DASHBOARDS],
             ['agents', 'Agents', $icon['agents'], ['agents', 'agents.*'], \App\Support\Permission::VIEW_AGENTS],
             ['corrections', 'Corrections', $icon['corrections'], ['corrections'], \App\Support\Permission::VIEW_DASHBOARDS],
-            ['locations', 'Locations', $icon['locations'], ['locations'], \App\Support\Permission::VIEW_LOCATIONS],
+            ['locations.people', 'People map', $icon['locations'], ['locations', 'locations.*'], \App\Support\Permission::VIEW_LOCATIONS],
         ],
         'Results' => [
             ['collation', 'Collation', $icon['collation'], ['collation', 'collation.*'], \App\Support\Permission::VIEW_DASHBOARDS],
@@ -98,6 +98,7 @@
     <meta name="apple-mobile-web-app-title" content="Election Shield">
     <link rel="stylesheet" href="/css/app.css?v={{ filemtime(public_path('css/app.css')) }}">
     <script src="/js/app.js?v={{ filemtime(public_path('js/app.js')) }}" defer></script>
+    @yield('head')
 </head>
 <body @class(['has-sidebar' => $user]) @if ($user) data-cache-pages="1" @endif @if ($user?->sharesLocation()) data-location="{{ route('location.ping') }}" @endif @if ($user && ($user->can('respond_incidents') || $user->can('acknowledge_results') || $user->can('view_locations'))) data-alerts="{{ route('alerts') }}" data-snooze-url="{{ route('alerts.snooze') }}" @endif>
     @if ($user)

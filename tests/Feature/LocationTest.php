@@ -141,8 +141,9 @@ class LocationTest extends TestCase
 
         $refuser = User::factory()->create(['name' => 'Coord Two']);
         UserLocation::query()->create(['user_id' => $refuser->id, 'status' => UserLocation::DENIED, 'action' => 'opened the app']);
-        $this->get('/locations?tab=people')->assertOk()->assertSeeInOrder(['Location shared', 'Coord One', 'Location not shared', 'Coord Two']);
-        $this->get("/locations?tab=people&user={$coordinator->id}")->assertOk()->assertSee('opened the app')->assertSee('Location refused');
+        $this->get('/locations?tab=people')->assertRedirect('/locations/people');
+        $this->get('/locations/people')->assertOk()->assertSeeInOrder(['Coord One', 'Located', 'Coord Two', 'Location refused']);
+        $this->get("/locations/people/{$coordinator->id}")->assertOk()->assertSee('Opened the app')->assertSee('Location refused')->assertSee('Download CSV');
 
         // Observers don't see locations.
         $this->actingAs(User::factory()->role('observer')->create())->get('/locations')->assertForbidden();
@@ -154,5 +155,58 @@ class LocationTest extends TestCase
         $this->assertNull(LocationRecorder::parse('91,8,1,1'));
         $this->assertSame(['status' => 'denied'], LocationRecorder::parse('denied'));
         $this->assertSame(6.5, LocationRecorder::parse('6.5,8.1,12,1700000000000')['latitude']);
+    }
+
+    public function test_the_people_map_filters_by_time_frame_and_shows_a_persons_history(): void
+    {
+        $this->travelTo(now()->startOfMinute());
+        $agent = User::factory()->agent(self::PHONE)->create(['name' => 'Ada Obi', 'lga' => 'Abakaliki']);
+        $coordinator = User::factory()->create(['name' => 'Coord Far', 'lga' => 'Ohaukwu']);
+        $silent = User::factory()->create(['name' => 'Coord Silent']);
+        $at = fn (User $user, string $when, array $position, string $action = 'using the app') => UserLocation::query()->forceCreate([
+            'user_id' => $user->id, 'status' => UserLocation::OK, 'latitude' => $position[0], 'longitude' => $position[1], 'accuracy' => 15,
+            'action' => $action, 'located_at' => now()->modify($when), 'created_at' => now()->modify($when), 'updated_at' => now(),
+        ]);
+        $at($agent, '-3 days', [6.30, 8.10], 'opened the app');
+        $at($agent, '-20 minutes', [6.3249, 8.1137]);
+        $at($agent, '-5 minutes', [6.3349, 8.1137], 'field materials');
+        $at($coordinator, '-2 days', [6.5244, 3.3792]); // Lagos
+
+        $this->actingAs(User::factory()->admin()->create());
+
+        // Last hour: only the agent; the coordinator was last seen days ago.
+        $hour = $this->get('/locations/people?range=hour')->assertOk()->assertSee('Last hour');
+        $markers = $this->mapData($hour->getContent(), 'people-map-data')['markers'];
+        $this->assertSame(['Ada Obi'], array_column($markers, 'name'));
+        $this->assertSame(6.3349, $markers[0]['lat']);
+        $hour->assertSeeInOrder(['Ada Obi', 'Located', 'Coord Far', 'Not seen', 'Coord Silent', 'Not seen']);
+
+        // Last 7 days: the coordinator shows, flagged outside the state.
+        $week = $this->get('/locations/people?range=week');
+        $this->assertEqualsCanonicalizing(['Ada Obi', 'Coord Far'], array_column($this->mapData($week->getContent(), 'people-map-data')['markers'], 'name'));
+        $week->assertSee('Outside the state');
+        $this->get('/locations/people?range=week&status=outside')->assertSee('Coord Far')->assertDontSee('Ada Obi</b>', false);
+        $this->get('/locations/people?range=week&group=agent')->assertSee('Ada Obi')->assertDontSee('Coord Far');
+        $this->get('/locations/people?range=week&q=silent')->assertSee('Coord Silent')->assertDontSee('Ada Obi');
+
+        // A person's history: the path in the time frame, newest first, with distances.
+        $history = $this->get("/locations/people/{$agent->id}?range=week")->assertOk()
+            ->assertSeeInOrder(['Field materials', 'moved 1.1 km', 'Using the app', 'Opened the app']);
+        $this->assertCount(3, $this->mapData($history->getContent(), 'person-map-data')['path']);
+        $this->assertCount(2, $this->mapData($this->get("/locations/people/{$agent->id}?range=hour")->getContent(), 'person-map-data')['path']);
+
+        $csv = $this->get("/locations/people/{$agent->id}/history.csv?range=week")->assertOk()->streamedContent();
+        $this->assertStringContainsString('"field materials",ok,6.3349,8.1137,15', $csv);
+        $this->assertSame(4, substr_count(trim($csv), "\n") + 1);
+
+        // Coordinators without "See where people are" can't open it.
+        $this->actingAs($coordinator)->get('/locations/people')->assertForbidden();
+    }
+
+    private function mapData(string $html, string $id): array
+    {
+        $this->assertSame(1, preg_match('#<script type="application/json" id="'.$id.'">(.*?)</script>#s', $html, $match));
+
+        return json_decode($match[1], true);
     }
 }
