@@ -4,5 +4,5 @@
 @if ($more)<hr>@endif
 <a href="{{ route('account') }}">My account</a>
 <a href="{{ route('push') }}">Notifications</a>
-<button type="button" data-install hidden>Install app</button>
+<a href="{{ route('install') }}" data-get-app>📲 Get the app</a>
 <form method="post" action="{{ route('logout') }}" data-logout>@csrf<input type="hidden" name="push_endpoint" data-push-endpoint><button type="submit">Log out ({{ $user->name }})</button></form>

@@ -573,3 +573,38 @@ input[type=file]::file-selector-button { min-height: 44px; padding: 0 16px; marg
 .tracking-bar { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin: -4px 0 16px; }
 .tracking-bar label { margin: 0; }
 .tracking-bar select { width: auto; min-width: 200px; }
+
+/* ---- Get the app (/install) ---- */
+.install-page { max-width: 640px; margin: 0 auto; }
+.install-hero { display: flex; gap: 16px; align-items: center; margin: 8px 0 18px; }
+.install-hero img { border-radius: 20px; box-shadow: 0 4px 14px rgba(0, 0, 0, .18); flex: none; }
+.install-hero h1 { margin: 0 0 4px; font-size: 24px; line-height: 1.2; }
+.install-hero p { margin: 0; }
+.install-step h2 { margin-top: 0; }
+.install-primary { border-color: var(--brand); box-shadow: inset 0 0 0 1px var(--brand); }
+.install-warning { border-color: var(--warn); background: var(--warn-bg); }
+.button.big { min-height: 56px; font-size: 18px; border-radius: 12px; }
+.install-done { margin: 12px 0 0; padding: 10px 12px; border-radius: 10px; background: var(--good-bg); color: var(--good); font-weight: 600; }
+.install-steps { list-style: none; margin: 0 0 12px; padding: 0; display: grid; gap: 10px; }
+.install-steps li { display: grid; grid-template-columns: 36px minmax(0, 1fr); gap: 12px; align-items: center; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-2); font-size: 16px; }
+.install-steps .num { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; background: var(--brand); color: #fff; font-weight: 800; }
+.inline-icon { display: inline-flex; vertical-align: -5px; width: 24px; height: 24px; padding: 2px; border-radius: 6px; background: var(--surface); border: 1px solid var(--line); color: var(--link); }
+.inline-icon svg { width: 100%; height: 100%; }
+.ios-pointer { position: fixed; left: 50%; bottom: 12px; white-space: nowrap; transform: translateX(-50%); z-index: 50; padding: 8px 14px; border-radius: 999px; background: var(--brand); color: #fff; font-weight: 700; font-size: 14px; box-shadow: 0 4px 14px rgba(0, 0, 0, .25); animation: es-bob 1.4s ease-in-out infinite; pointer-events: none; }
+.install-step[hidden] .ios-pointer { display: none; }
+@keyframes es-bob { 50% { transform: translate(-50%, -6px); } }
+@media (prefers-reduced-motion: reduce) { .ios-pointer { animation: none; } }
+.install-qr-row { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: 16px; align-items: center; }
+.install-qr { width: 180px; height: 180px; background: #fff; border-radius: 12px; padding: 6px; border: 1px solid var(--line); }
+.install-qr.big { width: 240px; height: 240px; margin-top: 12px; }
+.install-qr svg { width: 100%; height: 100%; display: block; }
+.install-link { font-size: 18px; font-weight: 700; overflow-wrap: anywhere; }
+.install-share .row-actions { margin-top: 4px; }
+.install-foot { text-align: center; }
+.get-app-login { display: block; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); text-align: center; font-weight: 700; }
+@media (max-width: 520px) {
+  .install-qr-row { grid-template-columns: 1fr; justify-items: start; }
+  .install-hero img { width: 64px; height: 64px; border-radius: 16px; }
+  .install-hero h1 { font-size: 21px; }
+}
+body.has-sidebar .ios-pointer { bottom: calc(var(--tab-h) + 16px); }

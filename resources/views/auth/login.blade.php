@@ -69,6 +69,7 @@
                     <button class="button block" type="submit">Log in</button>
                 </form>
             @endif
+            <a class="get-app-login" href="{{ route('install') }}" data-get-app>📲 Get the app on your phone</a>
         </div>
     @endif
 </div>

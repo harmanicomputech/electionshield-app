@@ -748,39 +748,121 @@
     });
   }
 
-  function bindMain() { bindRows(); bindGuide(); bindQueue(); bindFilters(); bindBusyForms(); bindPhotos(); bindLocationForms(); bindFieldForms(); bindMediaInputs(); bindResultForms(); bindPush(); bindBroadcastForm(); bindTownHall(); bindMaps(); }
+  function bindMain() { bindRows(); bindGuide(); bindQueue(); bindFilters(); bindBusyForms(); bindPhotos(); bindLocationForms(); bindFieldForms(); bindMediaInputs(); bindResultForms(); bindPush(); bindBroadcastForm(); bindTownHall(); bindMaps(); bindInstallPage(); }
 
-  // Install: Android/desktop Chrome prompt, and a Home Screen guide on iPhone.
+  /*
+   * Getting the app (/install, and "Get the app" in the menu). Android and
+   * desktop Chrome/Edge offer a one-tap install (beforeinstallprompt); iPhone
+   * only allows Share → Add to Home Screen; in-app browsers (WhatsApp,
+   * Facebook…) can't install, so the page sends people to Chrome or Safari.
+   */
   var deferred = null;
+  var justInstalled = false;
+  var ua = navigator.userAgent || '';
+  var isIos = /iphone|ipad|ipod/i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+  var isAndroid = /android/i.test(ua);
+  var inApp = /FBAN|FBAV|FB_IAB|Instagram|WhatsApp|Line\/|Twitter|Snapchat|TikTok|MicroMessenger|; wv\)/i.test(ua) || (isIos && !/Safari\//.test(ua) && !/CriOS|FxiOS|EdgiOS/.test(ua));
+  function isStandalone() { return window.navigator.standalone === true || !!safe(function () { return matchMedia('(display-mode: standalone)').matches; }); }
+
+  function installChanged() {
+    document.querySelectorAll('[data-install]').forEach(function (b) { b.hidden = !deferred; });
+    bindInstallPage();
+  }
   window.addEventListener('beforeinstallprompt', function (event) {
     event.preventDefault();
     deferred = event;
-    document.querySelectorAll('[data-install]').forEach(function (b) { b.hidden = false; });
+    installChanged();
   });
-  document.querySelectorAll('[data-install]').forEach(function (button) {
-    button.addEventListener('click', function () {
-      if (!deferred) { return; }
-      deferred.prompt();
-      deferred.userChoice.finally(function () {
-        deferred = null;
-        document.querySelectorAll('[data-install]').forEach(function (b) { b.hidden = true; });
-      });
-    });
+  window.addEventListener('appinstalled', function () {
+    deferred = null;
+    justInstalled = true;
+    document.querySelectorAll('[data-install-done]').forEach(function (el) { el.hidden = false; });
+    installChanged();
   });
+  function promptInstall() {
+    if (!deferred) { location.href = '/install'; return; }
+    var event = deferred;
+    event.prompt();
+    event.userChoice.then(function (choice) {
+      if (choice && choice.outcome === 'accepted') { justInstalled = true; }
+    }).catch(function () {}).then(function () { deferred = null; installChanged(); });
+  }
+  document.addEventListener('click', function (event) {
+    var button = event.target.closest && event.target.closest('[data-install], [data-install-now]');
+    if (button) { event.preventDefault(); promptInstall(); }
+  });
+  // "Get the app" links disappear once the app is installed and in use.
+  if (isStandalone()) { document.querySelectorAll('[data-get-app]').forEach(function (el) { el.hidden = true; }); }
 
+  function copyText(text, button) {
+    var done = function () { var old = button.textContent; button.textContent = 'Copied ✓'; setTimeout(function () { button.textContent = old; }, 2000); };
+    if (navigator.clipboard && window.isSecureContext) { navigator.clipboard.writeText(text).then(done, function () { window.prompt('Copy this link:', text); }); } else { window.prompt('Copy this link:', text); }
+  }
+
+  function drawQr(el, text) {
+    if (!el || el.dataset.drawn || !window.qrcode) { return !!(el && el.dataset.drawn); }
+    var qr = window.qrcode(0, 'M');
+    qr.addData(text);
+    qr.make();
+    el.innerHTML = qr.createSvgTag({ cellSize: 6, margin: 2, scalable: true });
+    el.dataset.drawn = '1';
+    return true;
+  }
+
+  var installPageBound = false;
+  function bindInstallPage() {
+    var page = document.querySelector('[data-install-page]');
+    if (!page) { return; }
+    var step = isStandalone() ? 'installed'
+      : justInstalled ? 'prompt'
+      : inApp ? 'inapp'
+      : deferred ? (isAndroid || isIos ? 'prompt' : 'desktop')
+      : isIos ? 'ios'
+      : isAndroid ? 'android'
+      : 'desktop';
+    page.querySelectorAll('[data-step]').forEach(function (el) { el.hidden = el.getAttribute('data-step') !== step; });
+    page.querySelectorAll('[data-only]').forEach(function (el) { el.hidden = el.getAttribute('data-only') !== (isIos ? 'ios' : 'android'); });
+    // Just installed: say so where the button was.
+    page.querySelectorAll('[data-install-done]').forEach(function (el) { el.hidden = !justInstalled; });
+    page.querySelectorAll('[data-step=prompt] [data-install-now]').forEach(function (el) { el.hidden = justInstalled; });
+    var desktopInstall = page.querySelector('[data-desktop-install]');
+    if (desktopInstall) { desktopInstall.hidden = !deferred; }
+    // Chrome on iPhone has its Share button at the top right.
+    if (isIos && /CriOS/.test(ua)) {
+      page.querySelectorAll('[data-ios-where]').forEach(function (el) { el.textContent = 'at the top right, next to the address'; });
+      page.querySelectorAll('[data-ios-pointer]').forEach(function (el) { el.hidden = true; });
+    }
+    if (step === 'desktop') {
+      var qrBox = page.querySelector('[data-qr]');
+      var tries = 0;
+      (function draw() { if (!drawQr(qrBox, qrBox.getAttribute('data-qr')) && tries++ < 20) { setTimeout(draw, 150); } })();
+    }
+    if (installPageBound) { return; }
+    installPageBound = true;
+    page.querySelectorAll('[data-copy-link]').forEach(function (button) {
+      button.addEventListener('click', function () { copyText(button.getAttribute('data-copy-link'), button); });
+    });
+    var showQr = page.querySelector('[data-show-qr]');
+    if (showQr) {
+      showQr.addEventListener('click', function () {
+        var box = page.querySelector('[data-qr-share]');
+        box.hidden = !box.hidden;
+        drawQr(box, (page.querySelector('[data-qr]') || {}).getAttribute ? page.querySelector('[data-qr]').getAttribute('data-qr') : location.href);
+      });
+    }
+  }
+
+  // On a phone, until the app is installed: a small "Get the app" banner (can be hidden).
   function bindGuide() {
     var guide = document.querySelector('[data-ios-guide]');
-    var ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
-    var standalone = window.navigator.standalone === true || safe(function () { return matchMedia('(display-mode: standalone)').matches; });
-    var dismissed = safe(function () { return localStorage.getItem('es-ios-guide') === 'hidden'; });
-
-    if (!guide || !ios || standalone || dismissed) { return; }
+    var dismissed = safe(function () { return localStorage.getItem('es-app-banner') === 'hidden'; });
+    if (!guide || !(isIos || isAndroid) || isStandalone() || dismissed || document.querySelector('[data-install-page]')) { return; }
     guide.classList.add('show');
     var close = guide.querySelector('[data-dismiss]');
     if (close) {
       close.addEventListener('click', function () {
         guide.classList.remove('show');
-        safe(function () { localStorage.setItem('es-ios-guide', 'hidden'); });
+        safe(function () { localStorage.setItem('es-app-banner', 'hidden'); });
       });
     }
   }

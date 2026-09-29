@@ -120,7 +120,7 @@
             <div class="side-foot">
                 <a href="{{ route('account') }}" class="{{ $active('account') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ $icon['account'] }}"/></svg><span>My account</span></a>
                 <a href="{{ route('push') }}" class="{{ $active('push') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ $icon['push'] }}"/></svg><span>Notifications</span></a>
-                <button type="button" data-install hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ $icon['install'] }}"/></svg><span>Install app</span></button>
+                <a href="{{ route('install') }}" class="{{ $active('install') }}" data-get-app><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ $icon['install'] }}"/></svg><span>Get the app</span></a>
                 <div class="side-user">
                     <span class="avatar" aria-hidden="true">{{ \Illuminate\Support\Str::upper(\Illuminate\Support\Str::substr($user->name, 0, 1)) }}</span>
                     <span class="who">{{ $user->name }}<small>{{ $user->roleName() }}{{ $user->lga ? ' · '.$user->lga : '' }}</small></span>
@@ -163,9 +163,12 @@
 
         @if ($user)
             <div class="card install-guide" data-ios-guide>
-                <h2>Add Election Shield to your Home Screen</h2>
-                <p class="small">In Safari, tap the Share button <span aria-hidden="true">⬆︎</span>, then <b>Add to Home Screen</b>. Open it from there for full-screen use and alerts.</p>
-                <button type="button" class="button secondary" data-dismiss>Got it</button>
+                <h2>📲 Get the Election Shield app</h2>
+                <p class="small">Put it on your home screen: it opens full screen, works with poor network and shows alerts.</p>
+                <div class="row-actions">
+                    <a class="button" href="{{ route('install') }}">Get the app</a>
+                    <button type="button" class="button secondary" data-dismiss>Not now</button>
+                </div>
             </div>
             <p class="footer">Page loaded {{ \App\Support\Time::local(now()) }} · data last received from USSD {{ $lastData ? \App\Support\Time::local($lastData, 'j M, g:i A') : 'never' }}</p>
         @endif

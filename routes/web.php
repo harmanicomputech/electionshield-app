@@ -29,6 +29,7 @@ use App\Http\Controllers\Console\SystemController;
 use App\Http\Controllers\Console\TownHallManageController;
 use App\Http\Controllers\Console\UserController;
 use App\Http\Controllers\Field\FieldController;
+use App\Http\Controllers\InstallController;
 use App\Http\Controllers\JoinController;
 use App\Http\Controllers\RunnerController;
 use App\Http\Controllers\TownHallController;
@@ -59,6 +60,10 @@ Route::post('/townhall/{session}/ask', [TownHallController::class, 'ask'])->midd
 // Agents' no-login EC8A upload link (the token is the authorisation, see UploadLink).
 Route::get('/u/{reference}/{token}', [AgentUploadController::class, 'show'])->middleware('throttle:30,1')->name('upload.agent');
 Route::post('/u/{reference}/{token}', [AgentUploadController::class, 'store'])->middleware('throttle:10,1')->name('upload.agent.store');
+
+// "Get the app" (no login needed, so agents can install before signing in). /app is the short link to share.
+Route::get('/install', [InstallController::class, 'show'])->name('install');
+Route::redirect('/app', '/install')->name('install.short');
 
 Route::middleware('auth')->group(function () {
     Route::get('/account', [AccountController::class, 'show'])->name('account');
