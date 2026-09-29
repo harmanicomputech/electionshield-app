@@ -71,12 +71,34 @@ class User extends Authenticatable
         return $this->belongsTo(Agent::class, 'phone', 'phone_number');
     }
 
+    public const TRACK_ALWAYS = 'always';
+
+    public const TRACK_NEVER = 'never';
+
     /**
-     * Whether the app records this person's location (admins never).
+     * Whether the app records this person's location: their own setting
+     * (always / never) or else their role's "Location is recorded" (admins
+     * only when set to always).
      */
     public function sharesLocation(): bool
     {
-        return ! $this->isAdmin() && $this->hasPermission(Permission::SHARE_LOCATION);
+        return match ($this->track_location) {
+            self::TRACK_ALWAYS => true,
+            self::TRACK_NEVER => false,
+            default => ! $this->isAdmin() && $this->hasPermission(Permission::SHARE_LOCATION),
+        };
+    }
+
+    /**
+     * The label for this person's location setting.
+     */
+    public function trackingLabel(): string
+    {
+        return match ($this->track_location) {
+            self::TRACK_ALWAYS => 'Location always recorded',
+            self::TRACK_NEVER => 'Location never recorded',
+            default => $this->sharesLocation() ? 'Location recorded (role)' : 'Location not recorded (role)',
+        };
     }
 
     /**

@@ -72,7 +72,7 @@ final class Permission
                 self::SUBMIT_FIELD_REPORTS => ['Use the agent pages', 'Check in, materials, results, corrections, incidents, photos and videos (for agents)'],
             ],
             'Location' => [
-                self::SHARE_LOCATION => ['Location is recorded', 'The app asks for location when opened and records it with each action; agents can only check in with location. Not for admins'],
+                self::SHARE_LOCATION => ['Location is recorded', 'The app asks for location when opened and records it with each action; agents can only check in with location. Admins only when set per person (Users → Edit → Record their location)'],
                 self::VIEW_LOCATIONS => ['See where people are', 'The Locations page: agents\' check-in positions against their PU, and staff locations'],
             ],
             'Engagement' => [

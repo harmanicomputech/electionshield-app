@@ -76,6 +76,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/locations/people', [LocationController::class, 'people'])->name('locations.people');
         Route::get('/locations/people/{user}', [LocationController::class, 'person'])->name('locations.person');
         Route::get('/locations/people/{user}/history.csv', [LocationController::class, 'personCsv'])->name('locations.person.csv');
+        Route::post('/locations/people/{user}/tracking', [LocationController::class, 'tracking'])->middleware('can:'.Permission::MANAGE_USERS)->name('locations.person.tracking');
         Route::post('/locations/checkins/{presence}/pu', [LocationController::class, 'setPollingUnitLocation'])->name('locations.set-pu');
         Route::post('/locations/checkins/{presence}/review', [LocationController::class, 'review'])->name('locations.review');
     });

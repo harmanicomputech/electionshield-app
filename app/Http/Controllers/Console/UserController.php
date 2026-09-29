@@ -40,9 +40,15 @@ class UserController extends Controller
             'role' => ['required', Rule::in($this->staffRoles()->pluck('key'))],
             'lga' => ['nullable', 'string', 'max:100', Rule::exists('polling_units', 'lga')],
             'password' => ['required', Password::min(10)],
+            'track_location' => ['nullable', Rule::in(['role', User::TRACK_ALWAYS, User::TRACK_NEVER])],
         ]);
 
+        $tracking = $validated['track_location'] ?? null;
+        unset($validated['track_location']);
         $user = User::create($validated);
+        if (in_array($tracking, [User::TRACK_ALWAYS, User::TRACK_NEVER], true)) {
+            $user->forceFill(['track_location' => $tracking])->save();
+        }
         Audit::record('user.created', "Added {$user->roleName()} {$user->name} ({$user->email})");
 
         return back()->with('status', "Added {$user->name}. Give them their password in person or by phone.");
@@ -54,6 +60,7 @@ class UserController extends Controller
             'role' => ['required', Rule::in($this->staffRoles()->pluck('key'))],
             'lga' => ['nullable', 'string', 'max:100', Rule::exists('polling_units', 'lga')],
             'password' => ['nullable', Password::min(10)],
+            'track_location' => ['nullable', Rule::in(['role', User::TRACK_ALWAYS, User::TRACK_NEVER])],
         ]);
 
         if ($user->isAdmin() && $validated['role'] !== Role::ADMIN) {
@@ -68,6 +75,9 @@ class UserController extends Controller
 
         $user->role = $validated['role'];
         $user->lga = $validated['lga'] ?? null;
+        if ($request->has('track_location')) {
+            $user->track_location = in_array($validated['track_location'] ?? null, [User::TRACK_ALWAYS, User::TRACK_NEVER], true) ? $validated['track_location'] : null;
+        }
 
         if (filled($validated['password'] ?? null)) {
             $user->password = $validated['password'];
@@ -75,7 +85,7 @@ class UserController extends Controller
         }
 
         $user->save();
-        Audit::record('user.updated', "Updated {$user->name}: {$user->roleName()}, ".($user->lga ?? 'state-wide').(filled($validated['password'] ?? null) ? ', new password' : ''));
+        Audit::record('user.updated', "Updated {$user->name}: {$user->roleName()}, ".($user->lga ?? 'state-wide').', '.mb_strtolower($user->trackingLabel()).(filled($validated['password'] ?? null) ? ', new password' : ''));
 
         return back()->with('status', "Saved {$user->name}.");
     }

@@ -146,5 +146,13 @@
     });
   }
 
+  // "Add someone to the map": the form posts to the chosen person's address.
+  document.querySelectorAll('[data-tracking-form]').forEach(function (form) {
+    var select = form.querySelector('[data-tracking-user]');
+    var sync = function () { form.setAttribute('action', select.value); };
+    select.addEventListener('change', sync);
+    sync();
+  });
+
   if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', init); } else { init(); }
 })();

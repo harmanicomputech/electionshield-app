@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Agent;
 use App\Models\PollingUnit;
 use App\Models\Presence;
+use App\Models\Role;
 use App\Models\User;
 use App\Models\UserLocation;
 use App\Services\AlertFeed;
@@ -201,6 +202,49 @@ class LocationTest extends TestCase
 
         // Coordinators without "See where people are" can't open it.
         $this->actingAs($coordinator)->get('/locations/people')->assertForbidden();
+    }
+
+    public function test_any_user_can_be_tracked_or_not_per_person(): void
+    {
+        $admin = User::factory()->admin()->create(['name' => 'Main Admin']);
+        $otherAdmin = User::factory()->admin()->create(['name' => 'Deputy Admin', 'email' => 'deputy@example.com']);
+        $observer = User::factory()->role('observer')->create(['name' => 'Obi Observer']);
+        $coordinator = User::factory()->create(['name' => 'Coord Quiet']);
+        $this->assertFalse($otherAdmin->sharesLocation());
+        $this->assertFalse($observer->sharesLocation());
+
+        $this->actingAs($admin);
+        // From the People map: "Add someone to the map".
+        $this->get('/locations/people')->assertOk()->assertSee('Add someone to the map')->assertSee('Deputy Admin · Admin')->assertSee('Obi Observer · Observer');
+        $this->post("/locations/people/{$otherAdmin->id}/tracking", ['track_location' => 'always'])->assertRedirect();
+        $this->assertTrue($otherAdmin->fresh()->sharesLocation());
+        // From the Users page.
+        $this->put("/users/{$observer->id}", ['role' => 'observer', 'track_location' => 'always'])->assertRedirect();
+        $this->put("/users/{$coordinator->id}", ['role' => 'coordinator', 'track_location' => 'never'])->assertRedirect();
+        $this->assertTrue($observer->fresh()->sharesLocation());
+        $this->assertFalse($coordinator->fresh()->sharesLocation());
+        $this->assertSame('Location never recorded', $coordinator->fresh()->trackingLabel());
+
+        // The tracked admin's app now asks for location and records it.
+        $this->actingAs($otherAdmin->fresh())->get('/')->assertSee('data-location=', false);
+        $this->postJson('/location', ['status' => 'ok', 'latitude' => 6.32, 'longitude' => 8.11, 'action' => 'opened the app'])->assertOk();
+        $this->actingAs($coordinator->fresh())->get('/')->assertDontSee('data-location=', false);
+
+        // They are on the map; "Who" lists every role there.
+        $this->actingAs($admin);
+        $page = $this->get('/locations/people?range=hour')->assertOk()->assertSee('<option value="admin"', false)->assertSee('<option value="observer"', false);
+        $this->assertSame(['Deputy Admin'], array_column($this->mapData($page->getContent(), 'people-map-data')['markers'], 'name'));
+        $this->get('/locations/people?group=observer')->assertSee('Obi Observer')->assertDontSee('Deputy Admin</b>', false);
+        $this->get("/locations/people/{$otherAdmin->id}")->assertOk()->assertSee('Location always recorded');
+
+        // Back to the role's rule.
+        $this->post("/locations/people/{$otherAdmin->id}/tracking", ['track_location' => 'role'])->assertRedirect();
+        $this->assertFalse($otherAdmin->fresh()->sharesLocation());
+
+        // Only people who manage users can change it.
+        $viewer = User::factory()->role('observer')->create();
+        Role::query()->where('key', 'observer')->first()?->forceFill(['permissions' => [...(Role::query()->where('key', 'observer')->first()->permissions ?? []), 'view_locations']])->save();
+        $this->actingAs($viewer->fresh())->post("/locations/people/{$observer->id}/tracking", ['track_location' => 'never'])->assertForbidden();
     }
 
     private function mapData(string $html, string $id): array

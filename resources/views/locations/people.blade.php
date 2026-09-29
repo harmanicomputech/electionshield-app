@@ -22,7 +22,7 @@
 @section('content')
 <div class="page-head">
     <h1>People map</h1>
-    <p class="muted">Where agents and coordinators were, from their phones: when they open the app, every 10 minutes while it is open, and with each action. Tap a person for their full history.</p>
+    <p class="muted">Where everyone whose location is recorded was, from their phones: when they open the app, every 10 minutes while it is open, and with each action. Tap a person for their full history. Who is recorded: by role (Roles → “Location is recorded”) or per person (below, or Users → Edit).</p>
 </div>
 
 @include('locations._tabs')
@@ -58,13 +58,36 @@
     <script type="application/json" id="people-map-data">@json(['markers' => $markers, 'bounds' => $bounds])</script>
 </section>
 
+@if ($canManage)
+    <details class="card add-tracked">
+        <summary><b>Add someone to the map</b> <span class="muted small">· {{ number_format($untracked->count()) }} {{ $untracked->count() === 1 ? 'person is' : 'people are' }} not recorded</span></summary>
+        @if ($untracked->isEmpty())
+            <p class="muted small">Everyone's location is already recorded.</p>
+        @else
+            <form method="post" action="{{ route('locations.person.tracking', ['user' => $untracked->first()]) }}" data-tracking-form>
+                @csrf
+                <input type="hidden" name="track_location" value="always">
+                <label for="track-who">Person</label>
+                <select id="track-who" data-tracking-user required>
+                    @foreach ($untracked as $someone)
+                        <option value="{{ route('locations.person.tracking', ['user' => $someone]) }}">{{ $someone->name }} · {{ $someone->roleName() }}{{ $someone->email ? ' · '.$someone->email : ($someone->phone ? ' · '.$someone->phone : '') }}</option>
+                    @endforeach
+                </select>
+                <p class="small muted">Their phone asks them to allow location the next time they open the app; they then appear here.</p>
+                <button class="button" type="submit">Record their location</button>
+            </form>
+        @endif
+    </details>
+@endif
+
 <form class="filters people-filters" method="get" action="{{ route('locations.people') }}">
     <input type="hidden" name="range" value="{{ $range }}">
     @if ($status !== 'all')<input type="hidden" name="status" value="{{ $status }}">@endif
     <div>
         <label for="group">Who</label>
         <select id="group" name="group" data-autosubmit>
-            @foreach (['all' => 'Everyone', 'agent' => 'Agents', 'coordinator' => 'Coordinators', 'other' => 'Other roles'] as $key => $label)
+            <option value="all">Everyone</option>
+            @foreach ($roles as $key => $label)
                 <option value="{{ $key }}" @selected($group === $key)>{{ $label }}</option>
             @endforeach
         </select>

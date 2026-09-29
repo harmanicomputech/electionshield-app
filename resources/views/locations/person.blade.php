@@ -41,6 +41,19 @@
 
 @include('locations._tabs')
 
+@if ($canManage)
+    <form class="tracking-bar" method="post" action="{{ route('locations.person.tracking', $person) }}">
+        @csrf
+        <label for="track_location"><span class="badge {{ $person->sharesLocation() ? 'good' : '' }}">📍 {{ $person->trackingLabel() }}</span></label>
+        <select id="track_location" name="track_location" data-autosubmit aria-label="Record their location">
+            <option value="role" @selected($person->track_location === null)>As their role says</option>
+            <option value="always" @selected($person->track_location === 'always')>Always record</option>
+            <option value="never" @selected($person->track_location === 'never')>Never record</option>
+        </select>
+        <button class="button secondary" type="submit" data-js-hide>Save</button>
+    </form>
+@endif
+
 <div class="people-toolbar">
     @include('locations._range', ['routeName' => 'locations.person', 'keep' => ['user' => $person->id]])
     <a class="button secondary" href="{{ route('locations.person.csv', ['user' => $person, 'range' => $range]) }}">Download CSV</a>

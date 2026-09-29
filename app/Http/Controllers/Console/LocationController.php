@@ -98,7 +98,7 @@ class LocationController extends Controller
     {
         $filters = $request->validate([
             'range' => ['nullable', Rule::in(array_keys(PeopleLocations::RANGES))],
-            'group' => ['nullable', Rule::in(['all', 'agent', 'coordinator', 'other'])],
+            'group' => ['nullable', 'string', 'max:50'],
             'status' => ['nullable', Rule::in(['all', 'located', 'outside', 'denied', 'unavailable', 'not_seen'])],
             'lga' => ['nullable', 'string', 'max:100'],
             'q' => ['nullable', 'string', 'max:100'],
@@ -111,13 +111,11 @@ class LocationController extends Controller
         $search = trim((string) ($filters['q'] ?? ''));
 
         $people = $locations->tracked();
+        $trackedIds = $people->pluck('id');
         $lgas = $people->pluck('lga')->filter()->unique()->sort()->values();
+        $roles = $people->mapWithKeys(fn (User $user) => [$user->role => $user->roleName()])->sort();
         $people = $people
-            ->when($group !== 'all', fn ($all) => $all->filter(fn (User $user) => match ($group) {
-                'agent' => $user->isAgent(),
-                'coordinator' => $user->role === 'coordinator',
-                default => ! $user->isAgent() && $user->role !== 'coordinator',
-            }))
+            ->when($group !== 'all', fn ($all) => $all->where('role', $group))
             ->when($lga, fn ($all) => $all->where('lga', $lga))
             ->when($search !== '', fn ($all) => $all->filter(fn (User $user) => str_contains(mb_strtolower($user->name.' '.$user->phone.' '.$user->email), mb_strtolower($search))))
             ->values();
@@ -142,6 +140,9 @@ class LocationController extends Controller
             'lga' => $lga,
             'search' => $search,
             'lgas' => $lgas,
+            'roles' => $roles,
+            'canManage' => $request->user()->can(Permission::MANAGE_USERS),
+            'untracked' => $request->user()->can(Permission::MANAGE_USERS) ? User::query()->whereNotIn('id', $trackedIds)->orderBy('name')->get() : collect(),
             'counts' => $counts,
             'total' => $rows->count(),
             'rows' => $listed->forPage($page, $perPage)->values(),
@@ -160,7 +161,6 @@ class LocationController extends Controller
      */
     public function person(Request $request, User $user, PeopleLocations $locations, CheckinVerdict $verdicts): View
     {
-        abort_unless($user->sharesLocation() || UserLocation::query()->where('user_id', $user->id)->exists(), 404);
         $range = $request->validate(['range' => ['nullable', Rule::in(array_keys(PeopleLocations::RANGES))]])['range'] ?? 'day';
         $history = $locations->history($user, PeopleLocations::since($range));
 
@@ -173,6 +173,7 @@ class LocationController extends Controller
             'range' => $range,
             'history' => $history,
             'phones' => $request->user()->can(Permission::VIEW_AGENTS),
+            'canManage' => $request->user()->can(Permission::MANAGE_USERS),
             'verdicts' => $history['checkins']->mapWithKeys(fn (Presence $presence) => [$presence->id => $verdicts->for($presence, $presence->pollingUnit)]),
             'mapData' => [
                 'path' => $this->path($history['fixes']),
@@ -196,6 +197,18 @@ class LocationController extends Controller
             'action' => $fix->action,
             'id' => $fix->id,
         ])->values();
+    }
+
+    /**
+     * Turn location recording on or off for one person (any role, admins included).
+     */
+    public function tracking(Request $request, User $user): RedirectResponse
+    {
+        $value = $request->validate(['track_location' => ['required', Rule::in(['role', User::TRACK_ALWAYS, User::TRACK_NEVER])]])['track_location'];
+        $user->forceFill(['track_location' => $value === 'role' ? null : $value])->save();
+        Audit::record('user.tracking', "{$user->name}: ".mb_strtolower($user->trackingLabel()));
+
+        return back()->with('status', "{$user->name}: {$user->trackingLabel()}.".($user->sharesLocation() ? ' Their position is recorded from the next time they open the app (their phone asks them to allow location).' : ''));
     }
 
     public function personCsv(Request $request, User $user): StreamedResponse

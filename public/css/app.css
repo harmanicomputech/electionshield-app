@@ -568,3 +568,8 @@ input[type=file]::file-selector-button { min-height: 44px; padding: 0 16px; marg
   :root:not([data-theme="light"]) .map-canvas .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(.85) contrast(.9); }
 }
 :root[data-theme="dark"] .map-canvas .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(.85) contrast(.9); }
+.add-tracked summary { cursor: pointer; min-height: 32px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.add-tracked form { margin-top: 10px; }
+.tracking-bar { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin: -4px 0 16px; }
+.tracking-bar label { margin: 0; }
+.tracking-bar select { width: auto; min-width: 200px; }

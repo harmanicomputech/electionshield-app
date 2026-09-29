@@ -40,7 +40,7 @@ class PeopleLocations
      */
     public function tracked(): Collection
     {
-        return User::query()->where('role', '!=', 'admin')->orderBy('name')->get()
+        return User::query()->orderBy('name')->get()
             ->filter(fn (User $user) => $user->sharesLocation())->values();
     }
 
