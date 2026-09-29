@@ -34,6 +34,7 @@ The **Election Shield USSD service** (`harmanicomputech/claude`) is the source o
 - `config/election.php`: ballot, candidates, win-condition parameters; `config/services.php` → `ussd`: webhook and API credentials
 - `public/sw.js`, `public/manifest.webmanifest`, `public/js/app.js`, `public/css/app.css`: PWA and front end
 - `deploy/shared-hosting/`, `scripts/build-shared-hosting.sh`: upload package
+- `App\Support\Deployment` + `DEPLOY_ID`: unzipping keeps build-time file dates, so Blade can keep serving old compiled views after an upload. Every package (and every hand-made update zip) must carry a new `election-shield-web/DEPLOY_ID`; the app then clears compiled views, config/route caches and OPcache once. System → database update clears them too
 
 ## Rules that matter
 
