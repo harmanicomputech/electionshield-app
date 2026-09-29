@@ -9,7 +9,7 @@
  *   written by app.js) and are sent on the 'es-photos' Background Sync; agents'
  *   reports (with photos and videos) wait in 'forms' and go on 'es-forms'.
  */
-const VERSION = 'v6';
+const VERSION = 'v7';
 const SHELL = `es-shell-${VERSION}`;
 const PAGES = 'es-pages';
 const SHELL_FILES = [
@@ -25,7 +25,9 @@ const SHELL_FILES = [
 const DATA_PAGES = [/^\/$/, /^\/spread$/, /^\/collation(\/.*)?$/, /^\/monitor(\/.*)?$/, /^\/field(\/(result|incident|history))?$/];
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(caches.open(SHELL).then((cache) => cache.addAll(SHELL_FILES)).then(() => self.skipWaiting()));
+  // cache: 'reload' skips the browser's HTTP cache (the server lets it keep CSS/JS for 30 days),
+  // so a new version never starts with the previous version's files.
+  event.waitUntil(caches.open(SHELL).then((cache) => cache.addAll(SHELL_FILES.map((url) => new Request(url, { cache: 'reload' })))).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', (event) => {
@@ -81,20 +83,32 @@ async function page(request, url) {
 }
 
 async function shell(request) {
-  const cached = await caches.match(request, { ignoreSearch: true });
+  // Pages ask for /js/app.js?v=<file time>: a new upload is a new address, so match it exactly.
+  const cached = await caches.match(request);
 
   if (cached) {
-    // Refresh in the background so the next start gets the new version.
-    fetch(request).then((response) => response.ok && caches.open(SHELL).then((cache) => cache.put(request, response))).catch(() => {});
     return cached;
   }
 
-  const response = await fetch(request);
-  if (response.ok) {
-    const cache = await caches.open(SHELL);
-    cache.put(request, response.clone());
+  try {
+    const response = await fetch(request);
+    if (response.ok) {
+      const cache = await caches.open(SHELL);
+      const url = new URL(request.url);
+      // Keep one copy per file: drop the older versions of it.
+      const older = await cache.keys().then((keys) => keys.filter((key) => new URL(key.url).pathname === url.pathname && key.url !== request.url));
+      await Promise.all(older.map((key) => cache.delete(key)));
+      await cache.put(request, response.clone());
+    }
+    return response;
+  } catch (error) {
+    // Offline: any saved copy of the file will do.
+    const any = await caches.match(request, { ignoreSearch: true });
+    if (any) {
+      return any;
+    }
+    throw error;
   }
-  return response;
 }
 
 self.addEventListener('sync', (event) => {
