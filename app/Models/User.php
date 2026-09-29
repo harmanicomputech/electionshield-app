@@ -72,6 +72,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Whether the app records this person's location (admins never).
+     */
+    public function sharesLocation(): bool
+    {
+        return ! $this->isAdmin() && $this->hasPermission(Permission::SHARE_LOCATION);
+    }
+
+    /**
      * Where to land after signing in.
      */
     public function homeRoute(): string

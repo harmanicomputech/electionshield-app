@@ -15,6 +15,7 @@ use App\Http\Controllers\Console\CorrectionController;
 use App\Http\Controllers\Console\DashboardController;
 use App\Http\Controllers\Console\IncidentController;
 use App\Http\Controllers\Console\IrevController;
+use App\Http\Controllers\Console\LocationController;
 use App\Http\Controllers\Console\MediaController;
 use App\Http\Controllers\Console\MonitorController;
 use App\Http\Controllers\Console\OfficialCollationController;
@@ -66,6 +67,15 @@ Route::middleware('auth')->group(function () {
 
     // Photo and video files: staff, or the agent who sent them (checked in the controller).
     Route::get('/media/{attachment}/file', [MediaController::class, 'file'])->name('media.file');
+
+    // The phone's location (roles with "Location is recorded"; the controller checks).
+    Route::post('/location', [LocationController::class, 'ping'])->middleware('throttle:30,1')->name('location.ping');
+
+    Route::middleware('can:'.Permission::VIEW_LOCATIONS)->group(function () {
+        Route::get('/locations', [LocationController::class, 'index'])->name('locations');
+        Route::post('/locations/checkins/{presence}/pu', [LocationController::class, 'setPollingUnitLocation'])->name('locations.set-pu');
+        Route::post('/locations/checkins/{presence}/review', [LocationController::class, 'review'])->name('locations.review');
+    });
 
     Route::get('/notifications', [PushController::class, 'show'])->name('push');
     Route::post('/push/subscribe', [PushController::class, 'subscribe'])->name('push.subscribe');

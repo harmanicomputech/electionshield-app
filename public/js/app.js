@@ -739,7 +739,7 @@
     });
   }
 
-  function bindMain() { bindRows(); bindGuide(); bindQueue(); bindFilters(); bindBusyForms(); bindPhotos(); bindFieldForms(); bindMediaInputs(); bindResultForms(); bindPush(); bindBroadcastForm(); bindTownHall(); bindMaps(); }
+  function bindMain() { bindRows(); bindGuide(); bindQueue(); bindFilters(); bindBusyForms(); bindPhotos(); bindLocationForms(); bindFieldForms(); bindMediaInputs(); bindResultForms(); bindPush(); bindBroadcastForm(); bindTownHall(); bindMaps(); }
 
   // Install: Android/desktop Chrome prompt, and a Home Screen guide on iPhone.
   var deferred = null;
@@ -913,6 +913,133 @@
     setInterval(pollAlerts, 20000);
     setInterval(renderAlert, 30000);
     document.addEventListener('visibilitychange', function () { if (!document.hidden) { pollAlerts(); } });
+  }
+
+  /*
+   * Location, for roles with "Location is recorded" (body[data-location]).
+   * Asked for when the app opens and kept fresh while it is open. The last
+   * position goes with every action (X-ES-Location header on fetch posts, a
+   * _es_location field on plain form posts), and a ping is sent when the app
+   * opens and every 10 minutes, or "denied" when location was refused.
+   * Check-in (form[data-needs-location]) does not work without a position:
+   * it uses the recent one, or asks again.
+   */
+  var locationUrl = body.getAttribute('data-location');
+  var geo = navigator.geolocation;
+  var lastFix = locationUrl ? safe(function () { return JSON.parse(sessionStorage.getItem('es-fix') || 'null'); }) || null : null;
+  var locationState = '';
+  var FIX_FRESH_MS = 120000;
+  var PING_EVERY_MS = 600000;
+
+  function locationValue() {
+    if (lastFix) { return [lastFix.lat, lastFix.lng, Math.round(lastFix.acc || 0), lastFix.at].join(','); }
+    return locationState;
+  }
+
+  function storeFix(position) {
+    lastFix = { lat: position.coords.latitude, lng: position.coords.longitude, acc: position.coords.accuracy, at: position.timestamp || Date.now() };
+    locationState = '';
+    safe(function () { sessionStorage.setItem('es-fix', JSON.stringify(lastFix)); });
+  }
+
+  function locationFailed(error) {
+    locationState = error && error.code === 1 ? 'denied' : 'unavailable';
+    if (locationState === 'denied') { lastFix = null; safe(function () { sessionStorage.removeItem('es-fix'); }); }
+  }
+
+  function pingLocation(action) {
+    var data = lastFix
+      ? { status: 'ok', latitude: lastFix.lat, longitude: lastFix.lng, accuracy: Math.round(lastFix.acc || 0), located_at: Math.round(lastFix.at), action: action }
+      : { status: locationState || 'unavailable', action: action };
+    safe(function () { sessionStorage.setItem('es-ping-at', String(Date.now())); });
+    postJson(locationUrl, data).catch(function () {});
+  }
+
+  function maybePing() {
+    if (!navigator.onLine) { return; }
+    if (!safe(function () { return sessionStorage.getItem('es-opened'); })) {
+      safe(function () { sessionStorage.setItem('es-opened', '1'); });
+      pingLocation('opened the app');
+      return;
+    }
+    var last = parseInt(safe(function () { return sessionStorage.getItem('es-ping-at'); }) || '0', 10);
+    if (Date.now() - last > PING_EVERY_MS) { pingLocation('using the app'); }
+  }
+
+  // A position for check-in: the recent one, or ask the phone (and the person, if they have not allowed it yet).
+  function currentFix() {
+    if (lastFix && Date.now() - lastFix.at < FIX_FRESH_MS) { return Promise.resolve(lastFix); }
+    return new Promise(function (resolve, reject) {
+      if (!geo) { reject(new Error('no geolocation')); return; }
+      geo.getCurrentPosition(function (position) { storeFix(position); resolve(lastFix); }, function (error) { locationFailed(error); reject(error); }, { enableHighAccuracy: true, timeout: 20000, maximumAge: 30000 });
+    });
+  }
+
+  function hiddenField(form, name, value) {
+    var input = form.querySelector('input[type=hidden][name="' + name + '"]');
+    if (!input) { input = document.createElement('input'); input.type = 'hidden'; input.name = name; form.appendChild(input); }
+    input.value = value;
+  }
+
+  function bindLocationForms() {
+    document.querySelectorAll('form[data-needs-location]').forEach(function (form) {
+      if (form.dataset.locationBound) { return; }
+      form.dataset.locationBound = '1';
+      // Capture, so it runs before the form's own submit handler.
+      form.addEventListener('submit', function (event) {
+        if (form.dataset.located === '1') { form.dataset.located = ''; return; }
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        var submitter = event.submitter;
+        setState(form, 'Checking in…', 'queued');
+        currentFix().then(function (fix) {
+          hiddenField(form, 'latitude', fix.lat);
+          hiddenField(form, 'longitude', fix.lng);
+          hiddenField(form, 'location_accuracy', Math.round(fix.acc || 0));
+          hiddenField(form, 'located_at', Math.round(fix.at));
+          form.dataset.located = '1';
+          // After this submit event is over: the browser ignores a submit started during one.
+          setTimeout(function () { if (form.requestSubmit) { form.requestSubmit(submitter || undefined); } else { form.submit(); } }, 0);
+        }, function (error) {
+          setState(form, error && error.code === 1
+            ? 'Location is needed to check in. Allow location for this site (tap the lock or ⓘ next to the address, or your phone\'s settings), then try again.'
+            : 'Could not get your location. Turn on location (GPS) on your phone and try again.', 'failed');
+        });
+      }, true);
+    });
+  }
+
+  if (locationUrl) {
+    if (window.fetch) {
+      var plainFetch = window.fetch.bind(window);
+      window.fetch = function (input, init) {
+        var url = typeof input === 'string' ? input : (input && input.url) || '';
+        var value = locationValue();
+        if (init && String(init.method || 'GET').toUpperCase() === 'POST' && value && new URL(url, location.href).origin === location.origin) {
+          var headers = new Headers(init.headers || {});
+          headers.set('X-ES-Location', value);
+          init = Object.assign({}, init, { headers: headers });
+        }
+        return plainFetch(input, init);
+      };
+    }
+    document.addEventListener('submit', function (event) {
+      var form = event.target;
+      var value = locationValue();
+      if (value && form.method && form.method.toLowerCase() === 'post') { hiddenField(form, '_es_location', value); }
+    }, true);
+
+    if (geo) {
+      var firstAnswer = true;
+      var answered = function () { if (firstAnswer) { firstAnswer = false; maybePing(); } };
+      geo.watchPosition(function (position) { storeFix(position); answered(); }, function (error) { locationFailed(error); answered(); }, { enableHighAccuracy: true, maximumAge: 60000 });
+      // No answer at all (the prompt is still open, or GPS is slow): still note the visit.
+      setTimeout(answered, 30000);
+    } else {
+      locationState = 'unavailable';
+      maybePing();
+    }
+    setInterval(maybePing, 60000);
   }
 
   bindMain();

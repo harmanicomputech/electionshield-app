@@ -21,7 +21,7 @@
         <section class="card step {{ $presence ? 'done' : '' }}">
             <div class="step-head"><span class="step-no">1</span><h2>Check in</h2>@if ($presence)<span class="badge good">✓ {{ \App\Support\Time::local($presence->confirmed_at, 'g:i A') }}</span>@endif</div>
             <p class="small muted">Tell the situation room you are at your polling unit.</p>
-            <form method="post" action="{{ route('field.presence') }}" data-field-form="Check-in">
+            <form method="post" action="{{ route('field.presence') }}" data-field-form="Check-in" data-needs-location>
                 @csrf
                 @unless ($agent->polling_unit_code)<label for="presence-pu">PU code</label><input id="presence-pu" name="polling_unit" inputmode="numeric" required>@endunless
                 <button class="button block" type="submit">{{ $presence ? 'Check in again' : "I'm at my polling unit" }}</button>

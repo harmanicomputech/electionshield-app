@@ -163,7 +163,9 @@ Use **rehearsal mode** in the USSD console (Settings) while you test, then clear
 | Test | What should happen |
 | --- | --- |
 | Log in as an agent on a phone (`/login?as=agent`) | The agent's own Home page: check in, materials, result, incident |
-| Agent: **I'm at my polling unit**, then a materials button | "Presence confirmed", "Materials report saved" |
+| Open the app as an agent | The phone asks to use your location: tap **Allow** |
+| Agent: **I'm at my polling unit**, then a materials button | "Presence confirmed", "Materials report saved". If location was refused: "Location is needed to check in…" |
+| Admin: **Election day → Locations** | The check-in with a map link. Tap **Use as the PU's location** once for a PU you trust; later check-ins show "At the PU" or how far away they were |
 | Agent: **Submit result** with a photo of the sheet | "Result submitted. Ref: RS…. With 1 photo." |
 | Agent: **Report an incident**, "Violence", with a photo or short video | "Incident logged" |
 | Agent: turn on flight mode and report a delay | "Saved on this phone"; when back online, "Sent from this phone …" |

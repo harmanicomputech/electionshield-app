@@ -12,14 +12,17 @@ use App\Models\MaterialReport;
 use App\Models\PollingUnit;
 use App\Models\Presence;
 use App\Models\Result;
+use App\Models\UserLocation;
 use App\Services\Collation;
 use App\Services\FieldMedia;
 use App\Services\FieldSubmitter;
+use App\Services\LocationRecorder;
 use App\Support\Audit;
 use App\Support\FieldOptions;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -52,12 +55,46 @@ class FieldController extends Controller
         ]);
     }
 
-    public function presence(Request $request): JsonResponse|RedirectResponse
+    /**
+     * Check in: only with the phone's location (app.js reads it; the phone
+     * asks for permission when the app opens). The position is kept with
+     * the check-in for the situation room; the agent isn't shown it.
+     */
+    public function presence(Request $request, LocationRecorder $locations): JsonResponse|RedirectResponse
     {
         $agent = $this->agentOrFail($request);
-        $data = $request->validate(['polling_unit' => ['nullable', 'string', 'max:30']]);
+        $data = $request->validate([
+            'polling_unit' => ['nullable', 'string', 'max:30'],
+            'latitude' => ['required', 'numeric', 'between:-90,90'],
+            'longitude' => ['required_with:latitude', 'numeric', 'between:-180,180'],
+            'location_accuracy' => ['nullable', 'numeric', 'min:0', 'max:100000'],
+            'located_at' => ['nullable', 'integer', 'min:0'],
+        ], ['latitude.required' => 'Your location is needed to check in. Allow location for this site and try again.']);
 
-        return $this->reply($request, $this->submitter->submit('presence', $agent, array_filter($data)), 'field');
+        $outcome = $this->submitter->submit('presence', $agent, array_filter(['polling_unit' => $data['polling_unit'] ?? null]));
+
+        if ($outcome['ok']) {
+            $location = [
+                'status' => UserLocation::OK,
+                'latitude' => (float) $data['latitude'],
+                'longitude' => (float) $data['longitude'],
+                'accuracy' => isset($data['location_accuracy']) ? (float) $data['location_accuracy'] : null,
+                'located_at' => filled($data['located_at'] ?? null) ? Carbon::createFromTimestampMs((int) $data['located_at']) : now(),
+            ];
+
+            if ($presence = Presence::query()->where('ussd_id', (int) ($outcome['record']['id'] ?? 0))->first()) {
+                $presence->forceFill([
+                    'latitude' => $location['latitude'],
+                    'longitude' => $location['longitude'],
+                    'location_accuracy' => $location['accuracy'],
+                    'located_at' => $location['located_at'],
+                ])->save();
+            }
+
+            $locations->record($request->user(), $location, 'check-in'.($presence ? " PU {$presence->polling_unit_code}" : ''));
+        }
+
+        return $this->reply($request, $outcome, 'field');
     }
 
     public function materials(Request $request): JsonResponse|RedirectResponse

@@ -25,6 +25,7 @@
         'history' => 'M12 7v5l3 2M3 12a9 9 0 1 0 3-6.7L3 8m0-5v5h5',
         'push' => 'M6 16v-5a6 6 0 1 1 12 0v5l2 2H4l2-2Zm4 4h4',
         'account' => 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8a7 7 0 0 1 14 0',
+        'locations' => 'M12 2v3m0 14v3M2 12h3m14 0h3M12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12Zm0-3a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z',
         'install' => 'M12 3v12m-5-5 5 5 5-5M5 21h14',
         'logout' => 'M15 4h4v16h-4M10 8l-4 4 4 4M6 12h11',
     ];
@@ -43,6 +44,7 @@
             ['monitor', 'Polling units', $icon['monitor'], ['monitor', 'monitor.*'], \App\Support\Permission::VIEW_DASHBOARDS],
             ['agents', 'Agents', $icon['agents'], ['agents', 'agents.*'], \App\Support\Permission::VIEW_AGENTS],
             ['corrections', 'Corrections', $icon['corrections'], ['corrections'], \App\Support\Permission::VIEW_DASHBOARDS],
+            ['locations', 'Locations', $icon['locations'], ['locations'], \App\Support\Permission::VIEW_LOCATIONS],
         ],
         'Results' => [
             ['collation', 'Collation', $icon['collation'], ['collation', 'collation.*'], \App\Support\Permission::VIEW_DASHBOARDS],
@@ -97,7 +99,7 @@
     <link rel="stylesheet" href="/css/app.css?v={{ filemtime(public_path('css/app.css')) }}">
     <script src="/js/app.js?v={{ filemtime(public_path('js/app.js')) }}" defer></script>
 </head>
-<body @class(['has-sidebar' => $user]) @if ($user) data-cache-pages="1" @endif @if ($user && ($user->can('respond_incidents') || $user->can('acknowledge_results'))) data-alerts="{{ route('alerts') }}" data-snooze-url="{{ route('alerts.snooze') }}" @endif>
+<body @class(['has-sidebar' => $user]) @if ($user) data-cache-pages="1" @endif @if ($user?->sharesLocation()) data-location="{{ route('location.ping') }}" @endif @if ($user && ($user->can('respond_incidents') || $user->can('acknowledge_results') || $user->can('view_locations'))) data-alerts="{{ route('alerts') }}" data-snooze-url="{{ route('alerts.snooze') }}" @endif>
     @if ($user)
         <aside class="sidebar" aria-label="Main">
             <a class="side-brand" href="{{ route($user->homeRoute()) }}"><img src="/icons/icon-192.png" alt="" width="36" height="36"><span>Election Shield<small>Ebonyi {{ \Illuminate\Support\Carbon::parse(config('election.date'))->format('Y') }}</small></span></a>

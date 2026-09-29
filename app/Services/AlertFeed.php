@@ -8,11 +8,13 @@ use App\Models\Attachment;
 use App\Models\Ec8aPhoto;
 use App\Models\Incident;
 use App\Models\PollingUnit;
+use App\Models\Presence;
 use App\Models\Result;
 use App\Models\User;
 use App\Support\Permission;
 use App\Support\Settings;
 use App\Support\Time;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
 /**
@@ -61,6 +63,10 @@ class AlertFeed
                 ->latest('submitted_at')->limit(self::LIMIT)->get();
 
             $items = $items->merge($results->map(fn (Result $result) => $this->result($result, $phones, $user)));
+        }
+
+        if ($user->can(Permission::VIEW_LOCATIONS)) {
+            $items = $items->merge($this->checkins($user, $since, $rehearsal, $snoozed, $phones));
         }
 
         $this->withPlaces($items);
@@ -126,6 +132,49 @@ class AlertFeed
             'acknowledge' => route('results.acknowledge', $result->reference),
             'review' => $correction && $user->can(Permission::REVIEW_CORRECTIONS) ? route('corrections') : null,
         ];
+    }
+
+    /**
+     * Web check-ins made away from the PU, or that look faked, not yet reviewed.
+     *
+     * @param  list<string>  $snoozed
+     * @return Collection<int, array<string, mixed>>
+     */
+    private function checkins(User $user, Carbon $since, bool $rehearsal, array $snoozed, bool $phones): Collection
+    {
+        $verdicts = app(CheckinVerdict::class);
+
+        return Presence::query()->with('pollingUnit')
+            ->where('rehearsal', $rehearsal)
+            ->whereNotNull('latitude')
+            ->whereNull('location_reviewed_at')
+            ->where('confirmed_at', '>=', $since)
+            ->when($user->lga, fn ($query, $lga) => $query->where('lga', $lga))
+            ->latest('confirmed_at')->limit(100)->get()
+            ->map(fn (Presence $presence) => [$presence, $verdicts->for($presence, $presence->pollingUnit)])
+            ->filter(fn ($pair) => in_array($pair[1]['status'], [CheckinVerdict::AWAY, CheckinVerdict::SUSPICIOUS], true))
+            ->reject(fn ($pair) => in_array('CHK-'.$pair[0]->id, $snoozed, true))
+            ->take(self::LIMIT)
+            ->map(fn ($pair) => [
+                'kind' => 'checkin',
+                'reference' => 'CHK-'.$pair[0]->id,
+                'priority' => 1,
+                'urgent' => false,
+                'title' => $pair[1]['label'],
+                'heading' => $pair[1]['status'] === CheckinVerdict::AWAY ? 'Check-in away from the PU' : 'Suspicious check-in',
+                'note' => null,
+                'code' => $pair[0]->polling_unit_code,
+                'lga' => $pair[0]->lga,
+                'ward' => $pair[0]->ward,
+                'channel' => 'Web app',
+                'agent' => $pair[0]->agent_name,
+                'phone' => $phones ? $pair[0]->agent_phone : null,
+                'time' => $pair[0]->confirmed_at?->toIso8601String(),
+                'when' => $pair[0]->confirmed_at ? Time::local($pair[0]->confirmed_at, 'g:i A') : null,
+                'media' => 0,
+                'open' => route('locations').'#checkin-'.$pair[0]->id,
+                'acknowledge' => route('locations.review', $pair[0]),
+            ])->values();
     }
 
     /**

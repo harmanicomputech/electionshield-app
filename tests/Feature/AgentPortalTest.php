@@ -165,7 +165,9 @@ class AgentPortalTest extends TestCase
             'ussd.test/api/field/materials' => Http::response(['message' => 'Materials report saved.', 'materials' => ['id' => 4, 'polling_unit' => $this->unit(), 'status' => 'incomplete', 'status_label' => 'Arrived (incomplete)', 'agent' => ['name' => 'Ada Obi', 'phone_number' => self::PHONE], 'channel' => 'web', 'reported_at' => now()->toIso8601String()]], 201),
         ]);
 
-        $this->post('/field/presence')->assertRedirect('/field');
+        $this->post('/field/presence')->assertSessionHasErrors(['latitude' => 'Your location is needed to check in. Allow location for this site and try again.']);
+        Http::assertNothingSent();
+        $this->post('/field/presence', ['latitude' => 6.3249, 'longitude' => 8.1137, 'location_accuracy' => 12, 'located_at' => now()->getTimestampMs()])->assertRedirect('/field');
         $this->post('/field/materials', ['status' => 'incomplete'])->assertRedirect('/field');
         $this->post('/field/materials', ['status' => 'lost'])->assertSessionHasErrors('status');
 

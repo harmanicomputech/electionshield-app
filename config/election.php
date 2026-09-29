@@ -90,6 +90,14 @@ return [
     // and from the pinger URL / host cron; see App\Support\BackgroundRunner.
     'background_runner' => (bool) env('BACKGROUND_RUNNER', true),
 
+    // Agents' web check-ins must be within this many metres of the PU
+    // (plus the GPS reading's own error, up to 100 m).
+    'checkin_radius_m' => (int) env('CHECKIN_RADIUS_M', 300),
+
+    // A wide box around the state [min lat, max lat, min lng, max lng]:
+    // positions outside it are flagged.
+    'state_bounds' => [5.4, 7.0, 7.3, 8.6],
+
     // Photos and videos agents send with results and incidents.
     'media' => [
         'max_video_mb' => (int) env('MEDIA_MAX_VIDEO_MB', 100),

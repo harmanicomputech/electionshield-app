@@ -6,7 +6,12 @@ use Illuminate\Database\Eloquent\Model;
 
 class PollingUnit extends Model
 {
-    protected $fillable = ['code', 'name', 'ward', 'lga', 'registered_voters'];
+    protected $fillable = ['code', 'name', 'ward', 'lga', 'registered_voters', 'latitude', 'longitude', 'location_source'];
+
+    protected function casts(): array
+    {
+        return ['latitude' => 'float', 'longitude' => 'float'];
+    }
 
     /**
      * INEC codes like EB/212/02633/007 are stored as digits: 21202633007.

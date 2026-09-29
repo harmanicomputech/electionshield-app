@@ -18,7 +18,7 @@ class FieldSubmitter
 
     /**
      * @param  array<string, mixed>  $data
-     * @return array{ok: bool, status: int, message: string, reference: ?string, retry: bool}
+     * @return array{ok: bool, status: int, message: string, reference: ?string, retry: bool, record?: array<string, mixed>}
      */
     public function submit(string $kind, Agent $agent, array $data): array
     {
@@ -59,7 +59,7 @@ class FieldSubmitter
             report($e);
         }
 
-        return ['ok' => true, 'status' => 201, 'message' => (string) $response->json('message'), 'reference' => $record['reference'] ?? null, 'retry' => false];
+        return ['ok' => true, 'status' => 201, 'message' => (string) $response->json('message'), 'reference' => $record['reference'] ?? null, 'retry' => false, 'record' => $record];
     }
 
     /**

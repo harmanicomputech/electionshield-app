@@ -9,7 +9,7 @@
  *   written by app.js) and are sent on the 'es-photos' Background Sync; agents'
  *   reports (with photos and videos) wait in 'forms' and go on 'es-forms'.
  */
-const VERSION = 'v5';
+const VERSION = 'v6';
 const SHELL = `es-shell-${VERSION}`;
 const PAGES = 'es-pages';
 const SHELL_FILES = [

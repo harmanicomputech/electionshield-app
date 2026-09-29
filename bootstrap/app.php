@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\RecordUserLocation;
 use App\Http\Middleware\RunBackgroundWork;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Application;
@@ -18,6 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->append(RunBackgroundWork::class);
+        $middleware->appendToGroup('web', RecordUserLocation::class);
         $middleware->redirectGuestsTo(fn () => route('login'));
         $middleware->redirectUsersTo(fn () => route('dashboard'));
         // The agent upload link's token is its authorisation, and uploads

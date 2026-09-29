@@ -172,6 +172,14 @@ class UssdIngestor
         $unit = $this->pollingUnit($data['polling_unit'] ?? []);
         $presence = Presence::firstOrNew(['ussd_id' => (int) $this->required($data, 'id')]);
 
+        $confirmedAt = Time::parse($data['confirmed_at'] ?? null);
+
+        // Checked in again: the position of the earlier check-in no longer applies
+        // (a web check-in gets its new position straight after this).
+        if ($presence->exists && $presence->confirmed_at?->getTimestamp() !== $confirmedAt?->getTimestamp()) {
+            $presence->forceFill(['latitude' => null, 'longitude' => null, 'location_accuracy' => null, 'located_at' => null, 'location_reviewed_at' => null, 'location_reviewed_by' => null]);
+        }
+
         $presence->fill([
             'polling_unit_code' => $unit['code'],
             'lga' => $unit['lga'] ?? $presence->lga,
@@ -179,7 +187,7 @@ class UssdIngestor
             'agent_name' => Arr::get($data, 'agent.name'),
             'agent_phone' => Arr::get($data, 'agent.phone_number'),
             'channel' => Arr::get($data, 'channel') === 'web' ? 'web' : 'ussd',
-            'confirmed_at' => Time::parse($data['confirmed_at'] ?? null),
+            'confirmed_at' => $confirmedAt,
             'rehearsal' => $rehearsal ?? ($presence->exists ? $presence->rehearsal : false),
         ])->save();
 

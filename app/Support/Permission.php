@@ -45,6 +45,10 @@ final class Permission
 
     public const SUBMIT_FIELD_REPORTS = 'submit_field_reports';
 
+    public const SHARE_LOCATION = 'share_location';
+
+    public const VIEW_LOCATIONS = 'view_locations';
+
     /**
      * Grouped for the Roles page: group => [permission => [label, hint]].
      *
@@ -66,6 +70,10 @@ final class Permission
                 self::VIEW_AGENTS => ['See agents', 'Agents page with names and phone numbers, silent PUs'],
                 self::MANAGE_AGENTS => ['Add agents and reset PINs', 'Creates the agent on the USSD service too'],
                 self::SUBMIT_FIELD_REPORTS => ['Use the agent pages', 'Check in, materials, results, corrections, incidents, photos and videos (for agents)'],
+            ],
+            'Location' => [
+                self::SHARE_LOCATION => ['Location is recorded', 'The app asks for location when opened and records it with each action; agents can only check in with location. Not for admins'],
+                self::VIEW_LOCATIONS => ['See where people are', 'The Locations page: agents\' check-in positions against their PU, and staff locations'],
             ],
             'Engagement' => [
                 self::MODERATE_TOWNHALL => ['Moderate the town hall', 'Approve questions, put them on air, presenter view'],
@@ -113,12 +121,13 @@ final class Permission
             'coordinator' => ['name' => 'Coordinator', 'description' => 'Runs the situation room: incidents, results, corrections, agents, official results and the town hall.', 'permissions' => [
                 self::VIEW_DASHBOARDS, self::VIEW_INCIDENTS, self::RESPOND_INCIDENTS, self::ACKNOWLEDGE_RESULTS, self::REVIEW_CORRECTIONS,
                 self::REVIEW_MEDIA, self::MANAGE_OFFICIAL_RESULTS, self::VIEW_AGENTS, self::MANAGE_AGENTS, self::MODERATE_TOWNHALL,
+                self::SHARE_LOCATION,
             ]],
             'observer' => ['name' => 'Observer', 'description' => 'Can watch the dashboards and incidents, but not act or see phone numbers.', 'permissions' => [
                 self::VIEW_DASHBOARDS, self::VIEW_INCIDENTS,
             ]],
             'agent' => ['name' => 'Agent', 'description' => 'Polling agents. They sign in with their phone number and USSD PIN and see only the agent pages.', 'permissions' => [
-                self::SUBMIT_FIELD_REPORTS,
+                self::SUBMIT_FIELD_REPORTS, self::SHARE_LOCATION,
             ]],
         ];
     }
