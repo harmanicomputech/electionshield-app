@@ -52,6 +52,7 @@ class FieldController extends Controller
             'result' => $code ? Result::query()->where('polling_unit_code', $code)->whereIn('status', [ResultStatus::Accepted, ResultStatus::Pending])->latest('submitted_at')->first() : null,
             'incidents' => Incident::query()->where('agent_phone', $phone)->count(),
             'statuses' => FieldOptions::materialStatuses(),
+            'maxMb' => (int) config('election.media.max_video_mb'),
         ]);
     }
 
@@ -103,9 +104,19 @@ class FieldController extends Controller
         $data = $request->validate([
             'status' => ['required', Rule::in(array_keys(FieldOptions::materialStatuses()))],
             'polling_unit' => ['nullable', 'string', 'max:30'],
-        ]);
+            ...FieldMedia::rules(),
+            // "Arrived" needs proof: a photo or video of the materials.
+            'media' => [Rule::requiredIf(in_array($request->input('status'), MaterialReport::NEEDS_EVIDENCE, true)), 'array', 'max:'.config('election.media.max_files')],
+        ], ['media.required' => 'Add a photo or video of the materials to report them as arrived.']);
 
-        return $this->reply($request, $this->submitter->submit('materials', $agent, array_filter($data)), 'field');
+        $outcome = $this->submitter->submit('materials', $agent, array_filter(['status' => $data['status'], 'polling_unit' => $data['polling_unit'] ?? null]));
+
+        if ($outcome['ok'] && isset($outcome['record']['id'])) {
+            $outcome['reference'] = MaterialReport::referenceFor((int) $outcome['record']['id']);
+            $outcome = $this->withMedia($request, $outcome, false);
+        }
+
+        return $this->reply($request, $outcome, 'field');
     }
 
     public function resultForm(Request $request): View

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Console;
 
 use App\Http\Controllers\Controller;
+use App\Models\Attachment;
 use App\Services\LgaMap;
 use App\Services\PuMonitor;
 use App\Services\PuStatus;
@@ -48,7 +49,10 @@ class MonitorController extends Controller
 
         $problems = $request->boolean('problems');
 
+        $materialRefs = $units->map(fn (PuStatus $unit) => $unit->materials?->reference())->filter();
+
         return view('monitor.ward', [
+            'evidence' => Attachment::query()->whereIn('reference', $materialRefs)->selectRaw('reference, count(*) as total')->groupBy('reference')->pluck('total', 'reference'),
             'lga' => $lga,
             'ward' => $ward,
             'problems' => $problems,

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Attachment;
 use App\Models\Ec8aPhoto;
 use App\Models\Incident;
 use App\Models\MaterialReport;
@@ -32,11 +33,11 @@ class DataMaintenance
         'users' => ['password', 'remember_token'], 'audit_logs' => [],
     ];
 
-    public function __construct(private Ec8aPhotoStore $photos) {}
+    public function __construct(private Ec8aPhotoStore $photos, private FieldMedia $media) {}
 
     /**
      * Delete every rehearsal record the USSD service sent us (and their
-     * EC8A photos). Real records are never touched.
+     * EC8A photos, photos and videos). Real records are never touched.
      *
      * @return array<string, int>
      */
@@ -44,6 +45,9 @@ class DataMaintenance
     {
         $references = Result::query()->where('rehearsal', true)->pluck('reference');
         $photos = Ec8aPhoto::query()->whereIn('result_reference', $references)->get();
+        $files = Attachment::query()->whereIn('reference', $references
+            ->merge(Incident::query()->where('rehearsal', true)->pluck('reference'))
+            ->merge(MaterialReport::query()->where('rehearsal', true)->pluck('ussd_id')->map(fn ($id) => MaterialReport::referenceFor((int) $id))))->get();
 
         $counts = DB::transaction(fn () => [
             'results' => Result::query()->where('rehearsal', true)->delete(),
@@ -56,7 +60,11 @@ class DataMaintenance
             $this->photos->delete($photo);
         }
 
-        return [...$counts, 'EC8A photos' => $photos->count()];
+        foreach ($files as $file) {
+            $this->media->delete($file);
+        }
+
+        return [...$counts, 'EC8A photos' => $photos->count(), 'photos and videos' => $files->count()];
     }
 
     /**

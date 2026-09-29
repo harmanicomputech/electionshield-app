@@ -41,6 +41,11 @@
                 @if ($unit->materials)
                     @php([$class, $text] = $materialBadge[$unit->materials->status] ?? ['', $unit->materials->status_label ?? $unit->materials->status])
                     <span class="badge {{ $class }}">{{ $text }} · {{ \App\Support\Time::local($unit->materials->reported_at) }}</span>
+                    @if ($files = $evidence[$unit->materials->reference()] ?? 0)
+                        <a class="badge good" href="{{ route('media', ['reference' => $unit->materials->reference()]) }}">📎 {{ $files }} {{ $files === 1 ? 'photo/video' : 'photos/videos' }}</a>
+                    @elseif (in_array($unit->materials->status, \App\Models\MaterialReport::NEEDS_EVIDENCE, true))
+                        <span class="badge warn">No photo ({{ $unit->materials->channelLabel() }})</span>
+                    @endif
                 @else
                     <span class="badge">No materials report</span>
                 @endif

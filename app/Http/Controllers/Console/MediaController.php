@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Console;
 use App\Http\Controllers\Controller;
 use App\Models\Attachment;
 use App\Models\Incident;
+use App\Models\MaterialReport;
 use App\Models\Result;
 use App\Services\FieldMedia;
 use App\Support\Audit;
@@ -30,9 +31,18 @@ class MediaController extends Controller
 
     public function index(Request $request): View
     {
-        $kind = $request->validate(['kind' => ['nullable', Rule::in(['all', Attachment::IMAGE, Attachment::VIDEO])]])['kind'] ?? 'all';
-        $items = Attachment::query()->when($kind !== 'all', fn ($query) => $query->where('kind', $kind))->latest()->simplePaginate(24)->withQueryString();
+        $filters = $request->validate([
+            'kind' => ['nullable', Rule::in(['all', Attachment::IMAGE, Attachment::VIDEO, 'materials'])],
+            'reference' => ['nullable', 'string', 'max:20'],
+        ]);
+        $kind = $filters['kind'] ?? 'all';
+        $items = Attachment::query()
+            ->when(in_array($kind, [Attachment::IMAGE, Attachment::VIDEO], true), fn ($query) => $query->where('kind', $kind))
+            ->when($kind === 'materials', fn ($query) => $query->where('reference', 'like', 'MAT-%'))
+            ->when($filters['reference'] ?? null, fn ($query, $reference) => $query->where('reference', $reference))
+            ->latest()->simplePaginate(24)->withQueryString();
         $references = $items->pluck('reference');
+        $materialIds = $references->filter(fn ($reference) => str_starts_with($reference, 'MAT-'))->map(fn ($reference) => (int) substr($reference, 4));
 
         return view('media.index', [
             'kind' => $kind,
@@ -40,6 +50,9 @@ class MediaController extends Controller
             'counts' => Attachment::query()->selectRaw('kind, count(*) as total')->groupBy('kind')->pluck('total', 'kind'),
             'incidents' => Incident::query()->whereIn('reference', $references)->get()->keyBy('reference'),
             'results' => Result::query()->whereIn('reference', $references)->get()->keyBy('reference'),
+            'materials' => MaterialReport::query()->whereIn('ussd_id', $materialIds)->get()->keyBy(fn (MaterialReport $report) => $report->reference()),
+            'materialsCount' => Attachment::query()->where('reference', 'like', 'MAT-%')->count(),
+            'reference' => $filters['reference'] ?? null,
         ]);
     }
 
@@ -49,6 +62,7 @@ class MediaController extends Controller
         $own = filled($user->phone) && (
             Incident::query()->where(['reference' => $attachment->reference, 'agent_phone' => $user->phone])->exists()
             || Result::query()->where(['reference' => $attachment->reference, 'agent_phone' => $user->phone])->exists()
+            || (str_starts_with($attachment->reference, 'MAT-') && MaterialReport::query()->where(['ussd_id' => (int) substr($attachment->reference, 4), 'agent_phone' => $user->phone])->exists())
         );
         abort_unless($own || $user->can(Permission::VIEW_DASHBOARDS), 403);
         abort_unless(Storage::disk('local')->exists($attachment->path), 404);

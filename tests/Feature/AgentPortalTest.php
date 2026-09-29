@@ -9,6 +9,7 @@ use App\Models\Incident;
 use App\Models\PollingUnit;
 use App\Models\Result;
 use App\Models\User;
+use App\Services\FieldMedia;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Request;
@@ -168,11 +169,44 @@ class AgentPortalTest extends TestCase
         $this->post('/field/presence')->assertSessionHasErrors(['latitude' => 'Your location is needed to check in. Allow location for this site and try again.']);
         Http::assertNothingSent();
         $this->post('/field/presence', ['latitude' => 6.3249, 'longitude' => 8.1137, 'location_accuracy' => 12, 'located_at' => now()->getTimestampMs()])->assertRedirect('/field');
-        $this->post('/field/materials', ['status' => 'incomplete'])->assertRedirect('/field');
+        // "Arrived" needs a photo or video; "not arrived" doesn't.
+        $this->post('/field/materials', ['status' => 'incomplete'])->assertSessionHasErrors(['media' => 'Add a photo or video of the materials to report them as arrived.']);
+        $this->post('/field/materials', ['status' => 'arrived'])->assertSessionHasErrors('media');
+        Http::assertNotSent(fn (Request $request) => str_ends_with($request->url(), '/field/materials'));
+        $this->post('/field/materials', ['status' => 'incomplete', 'media' => [UploadedFile::fake()->image('boxes.jpg'), UploadedFile::fake()->create('ballots.mp4', 3000, 'video/mp4')]])
+            ->assertRedirect('/field')->assertSessionHas('status', 'Materials report saved. With 1 photo and 1 video.');
         $this->post('/field/materials', ['status' => 'lost'])->assertSessionHasErrors('status');
 
-        $this->get('/field')->assertSee('Arrived (incomplete)')->assertSee('Check in again');
+        $this->get('/field')->assertSee('Arrived (incomplete)')->assertSee('Check in again')->assertSee('needed for “Arrived”');
         Http::assertSent(fn (Request $request) => str_ends_with($request->url(), '/field/materials') && $request['status'] === 'incomplete');
+        $this->assertSame(['MAT-4', 'MAT-4'], Attachment::query()->pluck('reference')->all());
+        $this->get(route('media.file', Attachment::query()->first()))->assertOk(); // the agent's own file
+
+        // The situation room sees the evidence on the ward page and the Photos & videos page.
+        $this->actingAs(User::factory()->create());
+        $this->get('/monitor/Abakaliki/Abakaliki%20Ward%2001')->assertOk()->assertSee('📎 2 photos/videos');
+        $this->get('/media?kind=materials')->assertOk()->assertSee('Materials: Arrived (incomplete) · PU 21202633007');
+        $this->get('/media?reference=MAT-4')->assertOk()->assertSee('Showing the files for MAT-4');
+
+        // Not arrived: no evidence needed.
+        $this->actingAs(User::query()->where('phone', self::PHONE)->sole());
+        $this->post('/field/materials', ['status' => 'not_arrived'])->assertRedirect('/field');
+    }
+
+    public function test_materials_evidence_is_flagged_when_missing_and_cleared_with_rehearsal_data(): void
+    {
+        $agent = ['name' => 'Ada Obi', 'phone_number' => self::PHONE];
+        // By USSD there is no way to send a photo: flagged.
+        $this->sendEvent('materials.reported', ['id' => 8, 'polling_unit' => $this->unit(), 'status' => 'arrived', 'status_label' => 'Arrived', 'agent' => $agent, 'channel' => 'ussd', 'reported_at' => now()->toIso8601String(), 'rehearsal' => false])->assertOk();
+        $this->actingAs(User::factory()->admin()->create(['password' => 'long-password']));
+        $this->get('/monitor/Abakaliki/Abakaliki%20Ward%2001')->assertSee('No photo (USSD)');
+
+        // A rehearsal report's files go with it.
+        $this->sendEvent('materials.reported', ['id' => 9, 'polling_unit' => $this->unit(), 'status' => 'arrived', 'status_label' => 'Arrived', 'agent' => $agent, 'channel' => 'web', 'reported_at' => now()->toIso8601String(), 'rehearsal' => true])->assertOk();
+        $file = app(FieldMedia::class)->store(UploadedFile::fake()->image('boxes.jpg'), 'MAT-9', Attachment::IMAGE, null);
+        $this->post('/system/clear-rehearsal', ['confirm' => 'CLEAR', 'password' => 'long-password'])->assertSessionHas('status', fn ($status) => str_contains($status, '1 materials reports, 0 EC8A photos, 1 photos and videos'));
+        $this->assertSame(0, Attachment::query()->count());
+        Storage::disk('local')->assertMissing($file->path);
     }
 
     public function test_staff_add_agents_and_reset_pins_through_the_ussd_service(): void

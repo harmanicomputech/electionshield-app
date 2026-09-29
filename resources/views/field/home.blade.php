@@ -31,13 +31,14 @@
 
         <section class="card step {{ $materials ? 'done' : '' }}">
             <div class="step-head"><span class="step-no">2</span><h2>Election materials</h2>@if ($materials)<span class="badge {{ $statuses[$materials->status][1] ?? '' }}">{{ $statuses[$materials->status][0] ?? $materials->status_label }}</span>@endif</div>
-            <p class="small muted">Report again whenever it changes.</p>
-            <form method="post" action="{{ route('field.materials') }}" data-field-form="Materials report">
+            <p class="small muted">Report again whenever it changes. To report them as arrived, first add a photo or video of the materials.</p>
+            <form method="post" action="{{ route('field.materials') }}" data-field-form="Materials report" enctype="multipart/form-data">
                 @csrf
                 @unless ($agent->polling_unit_code)<label for="materials-pu">PU code</label><input id="materials-pu" name="polling_unit" inputmode="numeric" required>@endunless
+                @include('partials.media-input', ['id' => 'materials-media', 'label' => 'Photo or video of the materials (needed for “Arrived”)', 'maxMb' => $maxMb])
                 <div class="choice-row">
                     @foreach ($statuses as $value => [$label, $class])
-                        <button class="button secondary choice {{ $class }}" type="submit" name="status" value="{{ $value }}">{{ $label }}</button>
+                        <button class="button secondary choice {{ $class }}" type="submit" name="status" value="{{ $value }}" @if (in_array($value, \App\Models\MaterialReport::NEEDS_EVIDENCE, true)) data-needs-media="Add a photo or video of the materials first (tap “Photo or video of the materials” above)." @endif>{{ $label }}</button>
                     @endforeach
                 </div>
                 <div class="queue-state" data-queue-state aria-live="polite"></div>

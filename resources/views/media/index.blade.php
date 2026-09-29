@@ -4,17 +4,21 @@
 
 @section('content')
 <div class="page-head">
-    <h1>Incident photos &amp; videos</h1>
-    <p class="muted">Sent by agents with their incident reports and results. EC8A sheet photos are on the EC8A photos tab.</p>
+    <h1>Photos &amp; videos</h1>
+    <p class="muted">Sent by agents with their incident reports, materials reports and results. EC8A sheet photos are on the EC8A photos tab.</p>
 </div>
 
 @include('partials.results-tabs')
 
 <nav class="tabs" aria-label="Kind">
-    @foreach (['all' => 'All', 'image' => 'Photos', 'video' => 'Videos'] as $key => $label)
-        <a href="{{ route('media', ['kind' => $key]) }}" class="{{ $kind === $key ? 'on' : '' }}">{{ $label }} <b>{{ $key === 'all' ? $counts->sum() : ($counts[$key] ?? 0) }}</b></a>
+    @foreach (['all' => 'All', 'image' => 'Photos', 'video' => 'Videos', 'materials' => 'Materials'] as $key => $label)
+        <a href="{{ route('media', ['kind' => $key]) }}" class="{{ $kind === $key && ! $reference ? 'on' : '' }}">{{ $label }} <b>{{ match ($key) { 'all' => $counts->sum(), 'materials' => $materialsCount, default => $counts[$key] ?? 0 } }}</b></a>
     @endforeach
 </nav>
+
+@if ($reference)
+    <p class="small">Showing the files for {{ $reference }} · <a href="{{ route('media') }}">show all</a></p>
+@endif
 
 @if ($items->isEmpty())
     <div class="card"><p class="muted">Nothing here yet.</p></div>
@@ -25,6 +29,8 @@
         @php
             $incident = $incidents[$item->reference] ?? null;
             $result = $results[$item->reference] ?? null;
+            $report = $materials[$item->reference] ?? null;
+            $record = $incident ?? $result ?? $report;
         @endphp
         <li class="item">
             @if ($item->isVideo())
@@ -35,11 +41,13 @@
             <h3>
                 @if ($incident)
                     <a href="{{ route('incidents', ['status' => 'unresolved']) }}#incident-{{ $incident->reference }}">{{ $incident->label() }} · {{ $item->reference }}</a>
+                @elseif ($report)
+                    Materials: {{ $report->status_label ?? str_replace('_', ' ', $report->status) }} · PU {{ $report->polling_unit_code }}
                 @else
                     {{ $item->reference }}
                 @endif
             </h3>
-            <div class="meta">{{ ($incident ?? $result)?->lga }}{{ ($incident ?? $result)?->ward ? ' › '.($incident ?? $result)->ward : '' }} · {{ $item->uploaded_by ?? 'agent' }} · {{ \App\Support\Time::local($item->created_at, 'j M, g:i A') }} · {{ $item->sizeLabel() }}</div>
+            <div class="meta">{{ $record?->lga }}{{ $record?->ward ? ' › '.$record->ward : '' }}@if ($report) · reported {{ \App\Support\Time::local($report->reported_at, 'g:i A') }}@endif · {{ $item->uploaded_by ?? 'agent' }} · {{ \App\Support\Time::local($item->created_at, 'j M, g:i A') }} · {{ $item->sizeLabel() }}</div>
             <div class="badges">
                 <span class="badge {{ $item->review_status === 'checked' ? 'good' : ($item->review_status === 'doubtful' ? 'bad' : '') }}">{{ ['checked' => '✓ Checked', 'doubtful' => '✗ Doubtful'][$item->review_status] ?? 'Not checked' }}</span>
             </div>

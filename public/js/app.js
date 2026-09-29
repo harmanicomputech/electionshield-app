@@ -405,6 +405,11 @@
     document.querySelectorAll('form[data-field-form]').forEach(function (form) {
       if (form.dataset.bound) { return; }
       form.dataset.bound = '1';
+      // Choosing a file clears a "photo needed" message.
+      form.addEventListener('change', function (event) {
+        var state = form.querySelector('[data-queue-state]');
+        if (event.target.type === 'file' && state && state.classList.contains('failed')) { setState(form, '', ''); }
+      });
       form.addEventListener('submit', function (event) {
         if (!window.fetch || !window.FormData) { return; } // plain form post
         event.preventDefault();
@@ -412,6 +417,10 @@
         var buttons = form.querySelectorAll('button[type=submit]');
         var tooBig = form.querySelector('.too-big');
         if (tooBig) { setState(form, 'A video is too large: remove it or record a shorter one.', 'failed'); return; }
+        // Some answers need proof (materials "Arrived"): a photo or video must be chosen first.
+        var needsMedia = submitter && submitter.getAttribute('data-needs-media');
+        var hasMedia = Array.prototype.some.call(form.querySelectorAll('input[type=file]'), function (input) { return input.files && input.files.length; });
+        if (needsMedia && !hasMedia) { setState(form, needsMedia, 'failed'); return; }
         buttons.forEach(function (b) { b.disabled = true; });
         setState(form, 'Preparing…', 'queued');
 
