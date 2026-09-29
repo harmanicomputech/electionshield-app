@@ -247,6 +247,18 @@ class LocationTest extends TestCase
         $this->actingAs($viewer->fresh())->post("/locations/people/{$observer->id}/tracking", ['track_location' => 'never'])->assertForbidden();
     }
 
+    public function test_the_people_map_still_opens_if_the_map_script_was_not_uploaded(): void
+    {
+        $script = public_path('js/locations-map.js');
+        rename($script, $script.'.bak');
+
+        try {
+            $this->actingAs(User::factory()->admin()->create())->get('/locations/people')->assertOk()->assertSee('locations-map.js?v=0', false);
+        } finally {
+            rename($script.'.bak', $script);
+        }
+    }
+
     private function mapData(string $html, string $id): array
     {
         $this->assertSame(1, preg_match('#<script type="application/json" id="'.$id.'">(.*?)</script>#s', $html, $match));

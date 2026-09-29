@@ -96,8 +96,8 @@
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="Election Shield">
-    <link rel="stylesheet" href="/css/app.css?v={{ filemtime(public_path('css/app.css')) }}">
-    <script src="/js/app.js?v={{ filemtime(public_path('js/app.js')) }}" defer></script>
+    <link rel="stylesheet" href="/css/app.css?v={{ @filemtime(public_path('css/app.css')) ?: 0 }}">
+    <script src="/js/app.js?v={{ @filemtime(public_path('js/app.js')) ?: 0 }}" defer></script>
     @yield('head')
 </head>
 <body @class(['has-sidebar' => $user]) @if ($user) data-cache-pages="1" @endif @if ($user?->sharesLocation()) data-location="{{ route('location.ping') }}" @endif @if ($user && ($user->can('respond_incidents') || $user->can('acknowledge_results') || $user->can('view_locations'))) data-alerts="{{ route('alerts') }}" data-snooze-url="{{ route('alerts.snooze') }}" @endif>
