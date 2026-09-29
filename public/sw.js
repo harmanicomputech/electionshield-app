@@ -9,7 +9,7 @@
  *   written by app.js) and are sent on the 'es-photos' Background Sync; agents'
  *   reports (with photos and videos) wait in 'forms' and go on 'es-forms'.
  */
-const VERSION = 'v7';
+const VERSION = 'v8';
 const SHELL = `es-shell-${VERSION}`;
 const PAGES = 'es-pages';
 const SHELL_FILES = [
@@ -53,7 +53,7 @@ self.addEventListener('fetch', (event) => {
   }
 
   if (request.mode === 'navigate') {
-    event.respondWith(page(request, url));
+    event.respondWith(page(request, url, event));
     return;
   }
 
@@ -62,22 +62,40 @@ self.addEventListener('fetch', (event) => {
   }
 });
 
-async function page(request, url) {
+// On a slow network, show the last copy of a data page after this long (the
+// page says how old it is); the fresh copy still arrives and is kept.
+const SLOW_MS = 4000;
+
+async function page(request, url, event) {
   const cacheable = DATA_PAGES.some((pattern) => pattern.test(url.pathname));
 
-  try {
-    const response = await fetch(request);
-
+  const network = fetch(request).then(async (response) => {
     // A redirect (to /login) means the session is gone: keep nothing.
     if (cacheable && response.ok && !response.redirected) {
       const cache = await caches.open(PAGES);
       await cache.put(url.pathname, response.clone());
     }
-
     return response;
-  } catch (error) {
-    const cached = cacheable ? await caches.match(url.pathname, { cacheName: PAGES }) : undefined;
+  });
 
+  const cached = cacheable ? await caches.match(url.pathname, { cacheName: PAGES }) : undefined;
+
+  // Only a plain address may fall back to its copy (a filtered view would show the wrong list).
+  if (cached && !url.search) {
+    let servedCopy = false;
+    // When the fresh page arrives after the copy was shown, tell the page (it updates itself).
+    event.waitUntil(network.then(async (response) => {
+      if (!servedCopy || !response.ok || !event.resultingClientId) { return; }
+      const client = await self.clients.get(event.resultingClientId);
+      if (client) { client.postMessage({ type: 'fresh-page', path: url.pathname }); }
+    }).catch(() => {}));
+    const slow = new Promise((resolve) => setTimeout(() => { servedCopy = true; resolve(cached.clone()); }, SLOW_MS));
+    return Promise.race([network.catch(() => { servedCopy = true; return cached.clone(); }), slow]);
+  }
+
+  try {
+    return await network;
+  } catch (error) {
     return cached || (await caches.match('/offline')) || Response.error();
   }
 }

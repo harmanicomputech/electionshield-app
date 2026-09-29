@@ -99,6 +99,10 @@
     <link rel="stylesheet" href="/css/app.css?v={{ @filemtime(public_path('css/app.css')) ?: 0 }}">
     <script src="/js/app.js?v={{ @filemtime(public_path('js/app.js')) ?: 0 }}" defer></script>
     @yield('head')
+    @if ($user)
+    {{-- Chrome/Android: start loading a page as soon as a finger touches its link. --}}
+    <script type="speculationrules">{"prefetch": [{"source": "document", "eagerness": "conservative", "where": {"and": [{"href_matches": "/*"}, {"not": {"href_matches": "/logout"}}, {"not": {"href_matches": "/*.csv"}}, {"not": {"href_matches": "/system/backup"}}, {"not": {"href_matches": "/media/*"}}, {"not": {"href_matches": "/cron/*"}}, {"not": {"selector_matches": "[download], [data-no-progress], [target]"}}]}}]}</script>
+    @endif
 </head>
 <body @class(['has-sidebar' => $user]) @if ($user) data-cache-pages="1" @endif @if ($user?->sharesLocation()) data-location="{{ route('location.ping') }}" @endif @if ($user && ($user->can('respond_incidents') || $user->can('acknowledge_results') || $user->can('view_locations'))) data-alerts="{{ route('alerts') }}" data-snooze-url="{{ route('alerts.snooze') }}" @endif>
     @if ($user)

@@ -41,7 +41,7 @@
     var stale = at && Date.now() - at.getTime() > 2 * REFRESH_MS;
 
     if (!navigator.onLine || stale) {
-      banner.textContent = (navigator.onLine ? 'Not live: ' : 'Offline: ') + 'showing data from ' + (at ? clock(at) : 'earlier');
+      banner.textContent = (navigator.onLine ? 'Slow network: showing data from ' : 'Offline: showing data from ') + (at ? clock(at) : 'earlier') + (navigator.onLine ? ' · tap to reload' : '');
       banner.hidden = false;
     } else {
       banner.hidden = true;
@@ -50,6 +50,23 @@
 
   // Live pages refresh their content every minute while visible and online.
   function isLivePage() { return LIVE_PAGES.some(function (p) { return p.test(location.pathname); }); }
+
+  // When the person last touched, typed or scrolled: a refresh waits until they stop,
+  // so a button is never replaced under their finger (that lost taps).
+  var lastInteraction = 0;
+  var pointerDown = false;
+  ['pointerdown', 'keydown', 'touchstart', 'wheel', 'scroll'].forEach(function (type) {
+    window.addEventListener(type, function () { lastInteraction = Date.now(); if (type === 'pointerdown' || type === 'touchstart') { pointerDown = true; } }, { passive: true, capture: true });
+  });
+  ['pointerup', 'pointercancel', 'touchend', 'touchcancel'].forEach(function (type) {
+    window.addEventListener(type, function () { pointerDown = false; lastInteraction = Date.now(); }, { passive: true, capture: true });
+  });
+  function whenIdle(fn, waited) {
+    waited = waited || 0;
+    if ((pointerDown || Date.now() - lastInteraction < 3000) && waited < 30000) { setTimeout(function () { whenIdle(fn, waited + 1000); }, 1000); return; }
+    fn();
+  }
+  var lastMain = null;
 
   function refresh(force) {
     if (!loggedIn || !isLivePage() || document.hidden || !navigator.onLine) { return; }
@@ -66,15 +83,34 @@
         var doc = new DOMParser().parseFromString(html, 'text/html');
         var main = doc.getElementById('main');
         var newMeta = doc.querySelector('meta[name="es-generated-at"]');
-        if (main) { document.getElementById('main').innerHTML = main.innerHTML; bindMain(); }
-        // Navigation badges (e.g. urgent incidents) live outside #main.
-        doc.querySelectorAll('[data-live-id]').forEach(function (fresh) {
-          document.querySelectorAll('[data-live-id="' + fresh.getAttribute('data-live-id') + '"]').forEach(function (el) { el.innerHTML = fresh.innerHTML; });
+        whenIdle(function () {
+          // Replace the page only when something changed (the time stamp aside).
+          var fresh = main ? main.innerHTML.replace(/Page loaded[^<]*/, '') : null;
+          if (main && fresh !== lastMain && (force || !document.querySelector('#main details[open]'))) {
+            lastMain = fresh;
+            document.getElementById('main').innerHTML = main.innerHTML;
+            bindMain();
+          }
+          // Navigation badges (e.g. urgent incidents) live outside #main.
+          doc.querySelectorAll('[data-live-id]').forEach(function (fresh) {
+            document.querySelectorAll('[data-live-id="' + fresh.getAttribute('data-live-id') + '"]').forEach(function (el) { if (el.innerHTML !== fresh.innerHTML) { el.innerHTML = fresh.innerHTML; } });
+          });
+          if (newMeta && meta) { meta.content = newMeta.content; }
+          showStatus();
         });
-        if (newMeta && meta) { meta.content = newMeta.content; }
-        showStatus();
       })
       .catch(showStatus);
+  }
+
+  if (banner) { banner.addEventListener('click', function () { if (navigator.onLine) { location.reload(); } }); }
+
+  // Slow network: the app showed its saved copy of this page; the fresh one has now arrived.
+  if (navigator.serviceWorker) {
+    navigator.serviceWorker.addEventListener('message', function (event) {
+      if (!event.data || event.data.type !== 'fresh-page' || event.data.path !== location.pathname) { return; }
+      if (isLivePage()) { refresh(true); return; }
+      if (banner) { banner.textContent = 'A newer version of this page is ready · tap to update'; banner.hidden = false; }
+    });
   }
 
   window.addEventListener('online', function () { showStatus(); flushQueue(); flushPhotos(); flushForms(); refresh(); });
@@ -193,7 +229,7 @@
   // Filters apply as soon as they change (the Filter button is the no-JS path).
   function bindFilters() {
     document.querySelectorAll('[data-autosubmit]').forEach(function (input) {
-      input.addEventListener('change', function () { input.form.submit(); });
+      input.addEventListener('change', function () { startProgress(); input.form.submit(); });
     });
     document.querySelectorAll('[data-js-hide]').forEach(function (el) { el.hidden = true; });
   }
@@ -868,6 +904,61 @@
   }
 
   /*
+   * Tapping feels instant: a progress bar the moment a link or form is used,
+   * a spinner on the pressed button, and a form can't be sent twice while
+   * the first one is still on its way (people tap again on slow networks).
+   * Forms that send in the background (data-queue, data-field-form) handle
+   * their own feedback and are left alone.
+   */
+  var progress = null;
+  var progressTimer = null;
+  function startProgress() {
+    if (!progress) {
+      progress = document.createElement('div');
+      progress.className = 'nav-progress';
+      progress.setAttribute('aria-hidden', 'true');
+      document.body.appendChild(progress);
+    }
+    progress.classList.remove('done');
+    void progress.offsetWidth; // restart the animation
+    progress.classList.add('on');
+    clearTimeout(progressTimer);
+    // A download or a slow answer never unloads the page: tidy up after a while.
+    progressTimer = setTimeout(stopProgress, 20000);
+  }
+  function stopProgress() {
+    clearTimeout(progressTimer);
+    if (progress) { progress.classList.remove('on'); }
+    document.querySelectorAll('.is-busy').forEach(function (el) { el.classList.remove('is-busy'); el.removeAttribute('aria-busy'); });
+    document.querySelectorAll('form[data-submitting]').forEach(function (form) { delete form.dataset.submitting; });
+  }
+  // Coming back with the Back button shows the page as it was left.
+  window.addEventListener('pageshow', stopProgress);
+
+  document.addEventListener('click', function (event) {
+    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) { return; }
+    var link = event.target.closest && event.target.closest('a[href]');
+    if (!link || link.target || link.hasAttribute('download') || link.hasAttribute('data-no-progress')) { return; }
+    var url = safe(function () { return new URL(link.href, location.href); });
+    if (!url || url.origin !== location.origin || /\.csv$|\/backup$|^\/media\//.test(url.pathname)) { return; }
+    if (url.pathname === location.pathname && url.search === location.search && url.hash) { return; } // same-page anchor
+    link.classList.add('is-busy');
+    startProgress();
+  });
+
+  // Runs after the forms' own handlers, so background forms (which cancel the submit) are skipped.
+  document.addEventListener('submit', function (event) {
+    var form = event.target;
+    if (event.defaultPrevented) { return; }
+    if (form.dataset.submitting) { event.preventDefault(); return; }
+    if ((form.getAttribute('target') || '') === '_blank') { return; }
+    form.dataset.submitting = '1';
+    var button = event.submitter || form.querySelector('button[type=submit], button:not([type])');
+    if (button) { button.classList.add('is-busy'); button.setAttribute('aria-busy', 'true'); }
+    startProgress();
+  });
+
+  /*
    * Situation-room pop-ups: new results and incidents nobody has answered,
    * fetched every 20 seconds. Acknowledge / resolve answer for everyone;
    * "Remind me" and closing the pop-up snooze it for this person only, and
@@ -915,12 +1006,17 @@
     return alertItems.filter(function (item) { return !(alertHidden[item.reference] > now); });
   }
 
+  var alertShown = '';
   function renderAlert() {
     if (!alertBox) { return; }
     var items = visibleAlerts();
     document.title = items.length ? '(' + items.length + ') ' + baseTitle : baseTitle;
-    if (!items.length) { alertBox.hidden = true; alertBox.innerHTML = ''; return; }
+    if (!items.length) { alertBox.hidden = true; alertBox.innerHTML = ''; alertShown = ''; return; }
     var item = items[0];
+    // Same pop-up already on screen: leave it (redrawing it would swallow a tap or close the menu).
+    var shown = item.reference + '|' + items.length + '|' + (item.when || '');
+    if (shown === alertShown && !alertBox.hidden) { return; }
+    alertShown = shown;
     var fresh = !alertSeen[item.reference];
     alertSeen[item.reference] = true;
 
