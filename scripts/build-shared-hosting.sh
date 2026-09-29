@@ -38,6 +38,9 @@ find "$BUILD/$APP/vendor" -mindepth 3 -maxdepth 3 -type d \( -name tests -o -nam
 
 mkdir -p "$BUILD/$APP/storage/"{app/private,framework/{cache/data,sessions,views},logs}
 rm -f "$BUILD/$APP/bootstrap/cache/"*.php
+# A new release id: the app clears compiled pages and caches once after the upload
+# (unzipping keeps old file dates, so Blade could keep showing the old pages).
+date -u +%Y%m%d%H%M%S-$(git -C "$ROOT" rev-parse --short HEAD) > "$BUILD/$APP/DEPLOY_ID"
 
 # Web root: the PWA files (manifest, service worker, CSS/JS, icons) plus the
 # shared-hosting front controller, which finds the app folder outside it.

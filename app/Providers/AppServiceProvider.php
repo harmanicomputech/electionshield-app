@@ -8,6 +8,7 @@ use App\Models\Result;
 use App\Models\SyncState;
 use App\Models\User;
 use App\Models\WebhookEvent;
+use App\Support\Deployment;
 use App\Support\Permission;
 use App\Support\Settings;
 use Illuminate\Support\Carbon;
@@ -25,6 +26,9 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // A new upload (DEPLOY_ID changed): drop compiled views and caches once.
+        Deployment::refreshIfChanged();
+
         foreach (Permission::all() as $permission) {
             Gate::define($permission, fn (User $user) => $user->hasPermission($permission));
         }

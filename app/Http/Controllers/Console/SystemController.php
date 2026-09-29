@@ -17,6 +17,7 @@ use App\Services\UssdIngestor;
 use App\Services\UssdSync;
 use App\Support\Audit;
 use App\Support\BackgroundRunner;
+use App\Support\Deployment;
 use App\Support\Settings;
 use App\Support\Time;
 use Illuminate\Http\RedirectResponse;
@@ -186,9 +187,11 @@ class SystemController extends Controller
             return back()->with('error', 'Could not update the database: '.$e->getMessage());
         }
 
+        // Also drop compiled pages and caches, so uploaded files show at once.
+        Deployment::clearCaches();
         Audit::record('system.migrate', 'Updated the database');
 
-        return back()->with('status', 'The database is up to date.');
+        return back()->with('status', 'The database is up to date, and the page cache was refreshed.');
     }
 
     /**
