@@ -10,7 +10,7 @@
 @section('content')
 <div class="page-head">
     <h1>Volunteers</h1>
-    <p class="muted">People who signed up on USSD with “How can you help?”. Anyone can dial the code; each phone number signs up once (signing up again updates it).</p>
+    <p class="muted">People who signed up on USSD with “How can you help?”. Anyone can dial the code. Each contact number is one volunteer (signing up again with the same number updates it); one phone can sign up several people.</p>
 </div>
 
 <div class="stats vol-stats">

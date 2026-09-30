@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 /**
  * A "How can you help?" sign-up from the USSD service (anyone can dial).
- * One per phone number there; the USSD service sends it again when it changes.
+ * One per contact number there (one phone can sign up several people); the USSD service sends it again when it changes.
  */
 class Volunteer extends Model
 {
