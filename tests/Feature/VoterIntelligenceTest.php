@@ -37,7 +37,7 @@ class VoterIntelligenceTest extends TestCase
             ->assertSee('Ebonyi State')
             ->assertSee('1,597,646')                       // INEC's 2023 Ebonyi total
             ->assertSee('2,940')                           // PUs in the register
-            ->assertSee('Registered voters per polling unit aren')
+            ->assertSee('Registered voters per LGA, ward and polling unit aren')
             ->assertSee('Ikwo')->assertSee(route('intelligence.lga', 'Ikwo'), false)
             ->assertSee('No local figures · showing Nigeria (national)')
             ->assertSee('Largest age group: 18–34 (youth) (39.7%).', false)
@@ -57,7 +57,8 @@ class VoterIntelligenceTest extends TestCase
         Agent::create(['ussd_id' => 1, 'name' => 'Ada', 'phone_number' => '+2348011111111', 'polling_unit_code' => '110101001']);
         Volunteer::create(['reference' => 'VL1', 'name' => 'Obi', 'phone_number' => '+2348022222222', 'contact_phone' => '+2348022222222', 'lga' => 'Abakaliki', 'ward' => 'Abakpa', 'roles' => ['canvass'], 'registered_at' => now()]);
 
-        $this->get('/intelligence/Abakaliki')->assertOk()->assertSee('Abakaliki LGA')->assertSee('Abakpa')
+        $this->get('/intelligence/Ikwo')->assertOk()->assertSee('Registered voters for Ikwo LGA aren')->assertSee('Load figures');
+        $this->get('/intelligence/Abakaliki')->assertOk()->assertSee('Abakaliki LGA')->assertSee('Abakpa')->assertDontSee('Registered voters for Abakaliki LGA aren')
             ->assertSee('1/', false)                      // 1 of Abakpa's PUs has a voter number
             ->assertSee(route('intelligence.ward', ['Abakaliki', 'Abakpa']), false);
         $this->get('/intelligence/Abakaliki/Abakpa')->assertOk()->assertSee('Abakpa ward')

@@ -56,9 +56,9 @@
     @endif
 </div>
 
-@if ($level === 'state' && $unitsWithVoters === 0)
+@if ($level !== 'pu' && $unitsWithVoters === 0 && ($level === 'state' || ! $official))
     <div class="card vi-note">
-        <p><b>Registered voters per polling unit aren't loaded yet.</b> INEC publishes them for each federal constituency (PDF lists of every PU with its registered voters, on inecnigeria.org). Until they are loaded, LGA, ward and PU voter numbers show “—”.@if ($canManage) Load them below under <a href="#data">Load figures</a>.@endif</p>
+        <p><b>Registered voters {{ $level === 'state' ? 'per LGA, ward and polling unit' : 'for '.$title }} aren't loaded yet</b>, so they show “—”. Nothing is estimated. They appear as soon as INEC's figures are loaded: registered voters per polling unit fill in every level, or an LGA or ward total can be loaded on its own.@if ($canManage && $level === 'state') See <a href="#data">Load figures</a> below.@elseif ($canManage) See <a href="{{ route('intelligence') }}#data">Load figures</a> on the Ebonyi page.@endif</p>
     </div>
 @endif
 
@@ -164,7 +164,7 @@
             <form method="post" action="{{ route('intelligence.voters') }}" enctype="multipart/form-data" class="vi-form">
                 @csrf
                 <h3>Registered voters per polling unit</h3>
-                <p class="small muted">CSV with <code>code,registered_voters</code> (codes like 11/01/01/001), from INEC's register for each federal constituency. Updates the PU register; nothing is saved if a row is wrong.</p>
+                <p class="small muted">CSV with <code>code,registered_voters</code> (codes like 11/01/01/001), from INEC's register. Updates the PU register; nothing is saved if a row is wrong.</p>
                 <input type="file" name="file" accept=".csv,text/csv" required>
                 <button class="button secondary" type="submit">Upload voters per PU</button>
             </form>
