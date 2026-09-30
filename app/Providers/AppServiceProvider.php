@@ -26,7 +26,7 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        // A new upload (DEPLOY_ID changed): drop compiled views and caches once.
+        // A new upload (DEPLOY_ID changed): drop compiled views and caches and run pending database updates once.
         Deployment::refreshIfChanged();
 
         foreach (Permission::all() as $permission) {
