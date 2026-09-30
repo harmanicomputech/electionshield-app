@@ -28,3 +28,5 @@ Thumbs.db
 /build
 /dist
 /DEPLOY_ID
+/storage/framework/deploy.lock
+/storage/framework/deploy-id
