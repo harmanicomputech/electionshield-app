@@ -51,6 +51,10 @@ final class Permission
 
     public const VIEW_VOLUNTEERS = 'view_volunteers';
 
+    public const VIEW_VOTER_INTELLIGENCE = 'view_voter_intelligence';
+
+    public const MANAGE_VOTER_DATA = 'manage_voter_data';
+
     /**
      * Grouped for the Roles page: group => [permission => [label, hint]].
      *
@@ -82,6 +86,8 @@ final class Permission
                 self::MANAGE_TOWNHALL => ['Set up town hall sessions', 'Create and edit sessions, draft reminders'],
                 self::MANAGE_BROADCASTS => ['Send broadcasts', 'SMS and WhatsApp broadcasts and the contact list'],
                 self::VIEW_VOLUNTEERS => ['See volunteers', 'The Volunteers page: “How can you help?” sign-ups from USSD with their phone numbers; mark them contacted'],
+                self::VIEW_VOTER_INTELLIGENCE => ['See voter intelligence', 'Voters by LGA, ward and polling unit, and who they are (age, gender, occupation, PVCs, first-time voters)'],
+                self::MANAGE_VOTER_DATA => ['Load voter figures', 'Upload INEC figures and registered voters per PU on the Voter intelligence page, and remove them'],
             ],
             'Administration' => [
                 self::EXPORT_DATA => ['Export data', 'CSV exports with phone numbers, and backups'],
@@ -124,7 +130,7 @@ final class Permission
             'coordinator' => ['name' => 'Coordinator', 'description' => 'Runs the situation room: incidents, results, corrections, agents, official results and the town hall.', 'permissions' => [
                 self::VIEW_DASHBOARDS, self::VIEW_INCIDENTS, self::RESPOND_INCIDENTS, self::ACKNOWLEDGE_RESULTS, self::REVIEW_CORRECTIONS,
                 self::REVIEW_MEDIA, self::MANAGE_OFFICIAL_RESULTS, self::VIEW_AGENTS, self::MANAGE_AGENTS, self::MODERATE_TOWNHALL,
-                self::SHARE_LOCATION, self::VIEW_VOLUNTEERS,
+                self::SHARE_LOCATION, self::VIEW_VOLUNTEERS, self::VIEW_VOTER_INTELLIGENCE,
             ]],
             'observer' => ['name' => 'Observer', 'description' => 'Can watch the dashboards and incidents, but not act or see phone numbers.', 'permissions' => [
                 self::VIEW_DASHBOARDS, self::VIEW_INCIDENTS,

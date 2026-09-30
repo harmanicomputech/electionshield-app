@@ -29,6 +29,7 @@ use App\Http\Controllers\Console\SystemController;
 use App\Http\Controllers\Console\TownHallManageController;
 use App\Http\Controllers\Console\UserController;
 use App\Http\Controllers\Console\VolunteerController;
+use App\Http\Controllers\Console\VoterIntelligenceController;
 use App\Http\Controllers\Field\FieldController;
 use App\Http\Controllers\InstallController;
 use App\Http\Controllers\JoinController;
@@ -92,6 +93,21 @@ Route::middleware('auth')->group(function () {
         Route::get('/volunteers', [VolunteerController::class, 'index'])->name('volunteers');
         Route::get('/volunteers/export', [VolunteerController::class, 'export'])->middleware('can:'.Permission::EXPORT_DATA)->name('volunteers.export');
         Route::post('/volunteers/{volunteer}/contacted', [VolunteerController::class, 'contacted'])->name('volunteers.contacted');
+    });
+
+    // Voter intelligence: voters by area and who they are (sourced figures only).
+    Route::middleware('can:'.Permission::VIEW_VOTER_INTELLIGENCE)->prefix('intelligence')->group(function () {
+        Route::middleware('can:'.Permission::MANAGE_VOTER_DATA)->group(function () {
+            Route::get('/data/template.csv', [VoterIntelligenceController::class, 'template'])->name('intelligence.template');
+            Route::post('/data/figures', [VoterIntelligenceController::class, 'importFigures'])->name('intelligence.figures');
+            Route::post('/data/voters', [VoterIntelligenceController::class, 'importVoters'])->name('intelligence.voters');
+            Route::post('/data/remove', [VoterIntelligenceController::class, 'removeSource'])->name('intelligence.remove');
+        });
+        Route::get('/data/register.csv', [VoterIntelligenceController::class, 'register'])->middleware('can:'.Permission::EXPORT_DATA)->name('intelligence.register');
+        Route::get('/', [VoterIntelligenceController::class, 'state'])->name('intelligence');
+        Route::get('/pu/{code}', [VoterIntelligenceController::class, 'pu'])->name('intelligence.pu');
+        Route::get('/{lga}', [VoterIntelligenceController::class, 'lga'])->name('intelligence.lga');
+        Route::get('/{lga}/{ward}', [VoterIntelligenceController::class, 'ward'])->where('ward', '.+')->name('intelligence.ward');
     });
 
     Route::get('/notifications', [PushController::class, 'show'])->name('push');

@@ -654,3 +654,29 @@ a, button, summary, label, select, input, textarea, .button { touch-action: mani
 .vol-card .row-actions { align-items: flex-start; }
 .vol-contacted form { display: grid; gap: 6px; margin-top: 8px; min-width: 220px; }
 @media (max-width: 480px) { .vol-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); } .vol-stats .stat b { font-size: 20px; } }
+
+/* Voter intelligence */
+.vi-stats .stat small { display: block; font-size: 12px; }
+.vi-note { border-left: 4px solid var(--warn); }
+.vi-target { border-left: 4px solid var(--brand); }
+.vi-insights { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+.vi-insights .badge { margin-left: 4px; }
+.vi-h2 { margin: 20px 0 10px; font-size: 18px; }
+.vi-h2 small { font-size: 14px; font-weight: 400; }
+.vi-profile { margin-bottom: 16px; }
+@media (min-width: 768px) { .vi-profile { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1200px) { .vi-profile { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.vi-profile h3 { margin: 0 0 6px; font-size: 16px; }
+.vi-profile .bars { gap: 8px; margin: 8px 0; }
+.vi-source { margin: 8px 0 0; overflow-wrap: anywhere; }
+.vi-code { display: block; font-weight: 400; }
+.vi-voters .track { margin-top: 4px; min-width: 80px; }
+.vi-voters small { display: block; }
+.vi-sources ul { margin: 0; padding-left: 20px; overflow-wrap: anywhere; }
+.vi-form { display: grid; gap: 8px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.vi-form h3, #data h3 { margin: 0; font-size: 16px; }
+.vi-form code { overflow-wrap: anywhere; }
+.vi-loaded { list-style: none; margin: 8px 0 12px; padding: 0; display: grid; gap: 8px; }
+.vi-loaded li { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+@media (max-width: 767.98px) { .vi-voters .track { width: 100%; } table.stack td.vi-voters { flex-direction: column; align-items: flex-end; } }
+@media (min-width: 1024px) { .vi-stats.five { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
