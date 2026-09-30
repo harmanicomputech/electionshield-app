@@ -5,6 +5,7 @@ namespace App\Services\Broadcasting;
 use App\Models\Agent;
 use App\Models\Contact;
 use App\Models\OptOut;
+use App\Models\Volunteer;
 use App\Support\Phone;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -12,7 +13,8 @@ use Illuminate\Support\Collection;
 /**
  * Who a broadcast goes to. Consent rules:
  *  - supporters and "other" contacts only if they opted in to the channel;
- *  - coordinators and agents get operational SMS without a separate opt-in;
+ *  - coordinators and agents get operational SMS without a separate opt-in,
+ *    and so do volunteers (they gave their number on USSD to be contacted);
  *  - WhatsApp always needs a WhatsApp opt-in (Meta's rule), so agents,
  *    who have none here, never get WhatsApp broadcasts;
  *  - anyone who opted out of the channel (STOP) is always left out.
@@ -26,6 +28,7 @@ class Audience
         'supporters' => 'Supporters (opted in)',
         'agents' => 'Polling agents',
         'coordinators' => 'Coordinators',
+        'volunteers' => 'Volunteers (signed up on USSD)',
         'other' => 'Other contacts (opted in)',
     ];
 
@@ -71,6 +74,14 @@ class Audience
                 ->orderBy('agents.id')
                 ->get(['agents.name', 'agents.phone_number'])
                 ->each(fn (Agent $agent) => $people->push(['phone' => Phone::normalize($agent->phone_number), 'name' => $agent->name]));
+        }
+
+        if (in_array('volunteers', $groups, true) && $channel === 'sms') {
+            Volunteer::query()
+                ->where('rehearsal', false)
+                ->tap(fn (Builder $query) => $area($query, 'lga', 'ward'))
+                ->orderBy('id')
+                ->each(fn (Volunteer $volunteer) => $people->push(['phone' => Phone::normalize($volunteer->contact_phone), 'name' => $volunteer->name]));
         }
 
         $optedOut = OptOut::query()->where('channel', $channel)->pluck('phone')->flip();

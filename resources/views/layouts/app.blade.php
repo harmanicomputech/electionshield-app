@@ -25,6 +25,7 @@
         'history' => 'M12 7v5l3 2M3 12a9 9 0 1 0 3-6.7L3 8m0-5v5h5',
         'push' => 'M6 16v-5a6 6 0 1 1 12 0v5l2 2H4l2-2Zm4 4h4',
         'account' => 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8a7 7 0 0 1 14 0',
+        'volunteers' => 'M12 21s-7-4.4-9.3-9A5.3 5.3 0 0 1 12 6.4a5.3 5.3 0 0 1 9.3 5.6C19 16.6 12 21 12 21Z',
         'locations' => 'M12 2v3m0 14v3M2 12h3m14 0h3M12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12Zm0-3a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z',
         'install' => 'M12 3v12m-5-5 5 5 5-5M5 21h14',
         'logout' => 'M15 4h4v16h-4M10 8l-4 4 4 4M6 12h11',
@@ -56,6 +57,7 @@
         'Engage' => [
             ['townhall.manage', 'Town hall', $icon['townhall'], ['townhall.manage', 'townhall.moderate', 'townhall.create', 'townhall.edit'], \App\Support\Permission::MODERATE_TOWNHALL],
             ['broadcasts', 'Broadcasts', $icon['broadcasts'], ['broadcasts', 'broadcasts.*', 'contacts'], \App\Support\Permission::MANAGE_BROADCASTS],
+            ['volunteers', 'Volunteers', $icon['volunteers'], ['volunteers', 'volunteers.*'], \App\Support\Permission::VIEW_VOLUNTEERS],
         ],
         'Admin' => [
             ['system', 'System & sync', $icon['system'], ['system'], \App\Support\Permission::MANAGE_SYSTEM],

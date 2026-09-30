@@ -47,6 +47,14 @@
             @endforeach
         </select>
     </div>
+    <div>
+        <label for="source">Reported by</label>
+        <select id="source" name="source" data-autosubmit>
+            <option value="">Agents and the public</option>
+            <option value="agent" @selected($source === 'agent')>Agents only</option>
+            <option value="public" @selected($source === 'public')>The public only{{ $publicOpen ? " ({$publicOpen} unresolved)" : '' }}</option>
+        </select>
+    </div>
     <div class="wide">
         <label class="inline"><input type="checkbox" name="urgent" value="1" data-autosubmit @checked(request()->boolean('urgent'))> Urgent only</label>
     </div>
@@ -63,11 +71,12 @@
         <li class="item {{ $incident->urgent && ! $incident->resolved_at ? 'urgent' : '' }}" id="incident-{{ $incident->reference }}">
             <div class="badges" style="margin-top:0">
                 @if ($incident->urgent)<span class="badge bad">⚠ Urgent</span>@endif
+                @if ($incident->isPublic())<span class="badge warn" title="Reported by a member of the public over USSD: not verified">Public report (unverified)</span>@endif
                 <span class="badge">{{ $incident->label() }}</span>
                 <span class="badge {{ $badgeClass }}">{{ $badgeText }}</span>
                 <span class="badge {{ $incident->channel === 'web' ? 'channel-web' : '' }}">via {{ $incident->channelLabel() }}</span>
             </div>
-            <h3>{{ $incident->pollingUnit?->name ?? 'PU '.$incident->polling_unit_code }}</h3>
+            <h3>{{ $incident->placeLabel() }}</h3>
             <div class="meta">
                 @if ($incident->lga && $incident->ward)
                     <a href="{{ route('monitor.ward', [$incident->lga, $incident->ward]) }}">{{ $incident->lga }} › {{ $incident->ward }}</a> ·
@@ -76,7 +85,7 @@
             </div>
             @if ($incident->note)<p class="note">{{ $incident->note }}</p>@endif
             @include('partials.media-strip', ['files' => $media[$incident->reference] ?? collect()])
-            <div class="meta">Reported by {{ $incident->agent_name ?? 'an agent' }}@if ($incident->agent_phone && auth()->user()->can('view_agents')) · <a class="tel" href="tel:{{ $incident->agent_phone }}">Call {{ $incident->agent_phone }}</a>@endif</div>
+            <div class="meta">Reported by {{ $incident->reporterName() }}@if ($incident->reporterPhone() && auth()->user()->can('view_agents')) · <a class="tel" href="tel:{{ $incident->reporterPhone() }}">Call {{ $incident->reporterPhone() }}</a>@endif</div>
 
             @if ($incident->acknowledged_at)
                 <p class="response">Acknowledged by {{ $incident->acknowledged_by }} at {{ \App\Support\Time::local($incident->acknowledged_at) }}.

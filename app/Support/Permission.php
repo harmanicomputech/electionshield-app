@@ -49,6 +49,8 @@ final class Permission
 
     public const VIEW_LOCATIONS = 'view_locations';
 
+    public const VIEW_VOLUNTEERS = 'view_volunteers';
+
     /**
      * Grouped for the Roles page: group => [permission => [label, hint]].
      *
@@ -79,6 +81,7 @@ final class Permission
                 self::MODERATE_TOWNHALL => ['Moderate the town hall', 'Approve questions, put them on air, presenter view'],
                 self::MANAGE_TOWNHALL => ['Set up town hall sessions', 'Create and edit sessions, draft reminders'],
                 self::MANAGE_BROADCASTS => ['Send broadcasts', 'SMS and WhatsApp broadcasts and the contact list'],
+                self::VIEW_VOLUNTEERS => ['See volunteers', 'The Volunteers page: “How can you help?” sign-ups from USSD with their phone numbers; mark them contacted'],
             ],
             'Administration' => [
                 self::EXPORT_DATA => ['Export data', 'CSV exports with phone numbers, and backups'],
@@ -121,7 +124,7 @@ final class Permission
             'coordinator' => ['name' => 'Coordinator', 'description' => 'Runs the situation room: incidents, results, corrections, agents, official results and the town hall.', 'permissions' => [
                 self::VIEW_DASHBOARDS, self::VIEW_INCIDENTS, self::RESPOND_INCIDENTS, self::ACKNOWLEDGE_RESULTS, self::REVIEW_CORRECTIONS,
                 self::REVIEW_MEDIA, self::MANAGE_OFFICIAL_RESULTS, self::VIEW_AGENTS, self::MANAGE_AGENTS, self::MODERATE_TOWNHALL,
-                self::SHARE_LOCATION,
+                self::SHARE_LOCATION, self::VIEW_VOLUNTEERS,
             ]],
             'observer' => ['name' => 'Observer', 'description' => 'Can watch the dashboards and incidents, but not act or see phone numbers.', 'permissions' => [
                 self::VIEW_DASHBOARDS, self::VIEW_INCIDENTS,

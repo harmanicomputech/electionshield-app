@@ -70,7 +70,7 @@ class ReportController extends Controller
             'tracker' => $tracker,
             'field' => $monitor->total($monitor->units()),
             'incidentsByType' => (clone $incidents)->selectRaw('coalesce(type_label, type) as label, count(*) as total, sum(case when resolved_at is null then 1 else 0 end) as open')->groupBy('label')->orderByDesc('total')->get(),
-            'urgentOpen' => (clone $incidents)->where('urgent', true)->whereNull('resolved_at')->count(),
+            'urgentOpen' => (clone $incidents)->where('urgent', true)->where('source', '!=', Incident::SOURCE_PUBLIC)->whereNull('resolved_at')->count(),
             'discrepancies' => $comparison->flagged($comparison->units())->filter(fn ($row) => in_array('discrepancy', $row['flags'], true))->take(10),
             'pendingCorrections' => Result::query()->where('rehearsal', $rehearsal)->where('status', ResultStatus::Pending)->whereNotNull('corrects_reference')->count(),
             'rehearsal' => $rehearsal,

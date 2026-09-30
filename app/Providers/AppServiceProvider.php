@@ -50,7 +50,7 @@ class AppServiceProvider extends ServiceProvider
     {
         try {
             return auth()->check()
-                ? Incident::query()->where('rehearsal', Settings::showingRehearsal())->where('urgent', true)->withResponseStatus(Incident::OPEN)->count()
+                ? Incident::query()->where('rehearsal', Settings::showingRehearsal())->where('urgent', true)->where('source', '!=', Incident::SOURCE_PUBLIC)->withResponseStatus(Incident::OPEN)->count()
                 : 0;
         } catch (Throwable) {
             return 0;

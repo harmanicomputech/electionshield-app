@@ -9,6 +9,7 @@ use App\Models\MaterialReport;
 use App\Models\PollingUnit;
 use App\Models\Presence;
 use App\Models\Result;
+use App\Models\Volunteer;
 use App\Support\Time;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -29,6 +30,7 @@ class UssdIngestor
         'incident.reported',
         'materials.reported',
         'presence.confirmed',
+        'volunteer.registered',
     ];
 
     /**
@@ -45,6 +47,7 @@ class UssdIngestor
             'incident.reported' => $this->incident($data, $rehearsal),
             'materials.reported' => $this->materials($data, $rehearsal),
             'presence.confirmed' => $this->presence($data, $rehearsal),
+            'volunteer.registered' => $this->volunteer($data, $rehearsal),
             default => null,
         };
 
@@ -119,13 +122,19 @@ class UssdIngestor
      */
     public function incident(array $data, ?bool $rehearsal = null): Incident
     {
-        $unit = $this->pollingUnit($data['polling_unit'] ?? []);
+        $public = ($data['source'] ?? null) === Incident::SOURCE_PUBLIC;
+        // A member of the public may give only an LGA and ward (no PU code).
+        $unit = $public && blank($data['polling_unit']['code'] ?? null)
+            ? ['code' => null, ...array_filter(Arr::only((array) ($data['polling_unit'] ?? []), ['lga', 'ward']))]
+            : $this->pollingUnit($data['polling_unit'] ?? []);
         $incident = Incident::firstOrNew(['reference' => $this->required($data, 'reference')]);
 
         $incident->fill([
             'polling_unit_code' => $unit['code'],
             'lga' => $unit['lga'] ?? $incident->lga,
             'ward' => $unit['ward'] ?? $incident->ward,
+            'source' => $public ? Incident::SOURCE_PUBLIC : Incident::SOURCE_AGENT,
+            'reporter_phone' => $public ? ($data['reporter_phone'] ?? null) : null,
             'type' => $this->required($data, 'type'),
             'type_label' => $data['type_label'] ?? null,
             'urgent' => (bool) ($data['urgent'] ?? false),
@@ -192,6 +201,40 @@ class UssdIngestor
         ])->save();
 
         return $presence;
+    }
+
+    /**
+     * A "How can you help?" sign-up. An older version arriving late never
+     * overwrites a newer one; our own follow-up notes are never touched.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    public function volunteer(array $data, ?bool $rehearsal = null): Volunteer
+    {
+        $volunteer = Volunteer::firstOrNew(['reference' => $this->required($data, 'reference')]);
+        $updatedAt = Time::parse($data['updated_at'] ?? null);
+
+        if ($volunteer->exists && $volunteer->ussd_updated_at && $updatedAt && $updatedAt->lt($volunteer->ussd_updated_at)) {
+            return $volunteer;
+        }
+
+        $volunteer->fill([
+            'name' => (string) ($data['name'] ?? ''),
+            'phone_number' => (string) ($data['phone_number'] ?? ''),
+            'contact_phone' => (string) ($data['contact_phone'] ?? $data['phone_number'] ?? ''),
+            'lga' => $data['lga'] ?? null,
+            'ward' => $data['ward'] ?? null,
+            'roles' => array_values(array_filter((array) ($data['roles'] ?? []), 'is_string')),
+            'skills' => array_values(array_filter((array) ($data['skills'] ?? []), 'is_string')) ?: null,
+            'other' => $data['other'] ?? null,
+            'is_agent' => (bool) ($data['is_agent'] ?? false),
+            'channel' => Arr::get($data, 'channel') === 'web' ? 'web' : 'ussd',
+            'registered_at' => Time::parse($data['registered_at'] ?? null) ?? $volunteer->registered_at,
+            'ussd_updated_at' => $updatedAt,
+            'rehearsal' => $rehearsal ?? ($volunteer->exists ? $volunteer->rehearsal : false),
+        ])->save();
+
+        return $volunteer;
     }
 
     /**

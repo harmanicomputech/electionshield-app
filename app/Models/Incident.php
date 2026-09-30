@@ -15,14 +15,50 @@ class Incident extends Model
 
     public const RESOLVED = 'resolved';
 
+    /** Reported by a member of the public (anyone who dialled the USSD code): unverified. */
+    public const SOURCE_PUBLIC = 'public';
+
+    public const SOURCE_AGENT = 'agent';
+
     protected $fillable = [
         'reference', 'polling_unit_code', 'lga', 'ward', 'type', 'type_label', 'urgent',
         'note', 'agent_name', 'agent_phone', 'reported_at', 'rehearsal', 'channel',
+        'source', 'reporter_phone',
     ];
 
     public function channelLabel(): string
     {
         return $this->channel === 'web' ? 'Web app' : 'USSD';
+    }
+
+    public function isPublic(): bool
+    {
+        return $this->source === self::SOURCE_PUBLIC;
+    }
+
+    /**
+     * Who reported it, for screens: the agent, or "Member of the public".
+     */
+    public function reporterName(): string
+    {
+        return $this->isPublic() ? 'Member of the public' : ($this->agent_name ?: 'An agent');
+    }
+
+    public function reporterPhone(): ?string
+    {
+        return $this->isPublic() ? $this->reporter_phone : $this->agent_phone;
+    }
+
+    /**
+     * Where, for screens: the PU name, or the ward and LGA a member of the public picked.
+     */
+    public function placeLabel(): string
+    {
+        if ($this->polling_unit_code) {
+            return $this->pollingUnit?->name ?? 'PU '.$this->polling_unit_code;
+        }
+
+        return trim(($this->ward ?? '').($this->lga ? ', '.$this->lga : ''), ', ') ?: 'Place not given';
     }
 
     protected static function booted(): void

@@ -37,7 +37,7 @@ class DashboardController extends Controller
             'duplicates' => $collation->duplicateCount(),
             'field' => $monitor->total($monitor->units()),
             'map' => (new LgaMap($rehearsal))->build(['share', 'results', 'checkin', 'incidents'], fn ($lga) => route('collation.lga', $lga)),
-            'urgentOpen' => Incident::query()->where('rehearsal', $rehearsal)->where('urgent', true)->withResponseStatus(Incident::OPEN)->count(),
+            'urgentOpen' => Incident::query()->where('rehearsal', $rehearsal)->where('urgent', true)->where('source', '!=', Incident::SOURCE_PUBLIC)->withResponseStatus(Incident::OPEN)->count(),
         ]);
     }
 

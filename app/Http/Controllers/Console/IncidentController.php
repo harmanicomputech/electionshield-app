@@ -29,6 +29,7 @@ class IncidentController extends Controller
             'urgent' => ['nullable', 'boolean'],
             'type' => ['nullable', 'string', 'max:30'],
             'lga' => ['nullable', 'string', 'max:100'],
+            'source' => ['nullable', Rule::in([Incident::SOURCE_AGENT, Incident::SOURCE_PUBLIC])],
         ]);
         $status = $filters['status'] ?? 'unresolved';
         // A coordinator's home LGA is the default; "all" shows every LGA.
@@ -46,9 +47,10 @@ class IncidentController extends Controller
             ->when($request->boolean('urgent'), fn (Builder $query) => $query->where('urgent', true))
             ->when($filters['type'] ?? null, fn (Builder $query, string $type) => $query->where('type', $type))
             ->when($filters['lga'] ?? null, fn (Builder $query, string $lga) => $query->where('lga', $lga))
+            ->when($filters['source'] ?? null, fn (Builder $query, string $source) => $query->where('source', $source))
             ->with('pollingUnit:code,name')
-            // Urgent and unhandled first, then newest.
-            ->orderByRaw('case when resolved_at is null and acknowledged_at is null and urgent = 1 then 0 else 1 end')
+            // Urgent and unhandled first (agents' before the public's unverified ones), then newest.
+            ->orderByRaw("case when resolved_at is null and acknowledged_at is null and urgent = 1 then (case when source = 'public' then 1 else 0 end) else 2 end")
             ->latest('reported_at')
             ->latest('id')
             ->simplePaginate(30)
@@ -64,7 +66,9 @@ class IncidentController extends Controller
                 Incident::ACKNOWLEDGED => (clone $base)->withResponseStatus(Incident::ACKNOWLEDGED)->count(),
                 Incident::RESOLVED => (clone $base)->withResponseStatus(Incident::RESOLVED)->count(),
             ],
-            'urgentOpen' => (clone $base)->withResponseStatus(Incident::OPEN)->where('urgent', true)->count(),
+            'urgentOpen' => (clone $base)->withResponseStatus(Incident::OPEN)->where('urgent', true)->where('source', '!=', Incident::SOURCE_PUBLIC)->count(),
+            'publicOpen' => (clone $base)->unresolved()->where('source', Incident::SOURCE_PUBLIC)->count(),
+            'source' => $filters['source'] ?? null,
             'types' => (clone $base)->select('type', 'type_label')->distinct()->orderBy('type')->get(),
             'lgas' => (clone $base)->whereNotNull('lga')->distinct()->orderBy('lga')->pluck('lga')->push($request->user()->lga)->filter()->unique()->sort()->values(),
             'lga' => $filters['lga'],

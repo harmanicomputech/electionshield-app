@@ -22,11 +22,12 @@ class PushAlerts
 
     public static function incidentCreated(Incident $incident): void
     {
-        if (! self::recent($incident->reported_at)) {
+        // Public reports are unverified: they show in the app, but don't alert phones.
+        if ($incident->isPublic() || ! self::recent($incident->reported_at)) {
             return;
         }
 
-        $place = $incident->pollingUnit?->name ?? 'PU '.$incident->polling_unit_code;
+        $place = $incident->placeLabel();
         $area = collect([$incident->lga, $incident->ward])->filter()->implode(' › ');
 
         self::send($incident->urgent ? 'urgent_incidents' : 'incidents', [

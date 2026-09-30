@@ -82,17 +82,20 @@ class AlertFeed
         return [
             'kind' => 'incident',
             'reference' => $incident->reference,
-            'priority' => $incident->urgent ? 0 : 2,
-            'urgent' => (bool) $incident->urgent,
+            // A public report is unverified: after agents' urgent ones, and no alarm sound.
+            'priority' => $incident->urgent ? ($incident->isPublic() ? 1 : 0) : 2,
+            'urgent' => (bool) $incident->urgent && ! $incident->isPublic(),
+            'public' => $incident->isPublic(),
             'title' => ($incident->urgent ? '⚠ ' : '').$incident->label(),
-            'heading' => $incident->urgent ? 'Urgent incident' : 'New incident',
+            'heading' => $incident->isPublic() ? 'Public report (unverified)' : ($incident->urgent ? 'Urgent incident' : 'New incident'),
             'note' => $incident->note,
             'code' => $incident->polling_unit_code,
             'lga' => $incident->lga,
             'ward' => $incident->ward,
             'channel' => $incident->channel === 'web' ? 'Web app' : 'USSD',
-            'agent' => $incident->agent_name,
-            'phone' => $phones ? $incident->agent_phone : null,
+            'agent' => $incident->reporterName(),
+            'phone' => $phones ? $incident->reporterPhone() : null,
+            'place_label' => $incident->polling_unit_code ? null : $incident->placeLabel(),
             'time' => $incident->reported_at?->toIso8601String(),
             'when' => $incident->reported_at ? Time::local($incident->reported_at, 'g:i A') : null,
             'media' => $this->mediaCount($incident->reference),
@@ -201,8 +204,9 @@ class AlertFeed
      */
     private function withPlaces(Collection $items): void
     {
-        $names = PollingUnit::query()->whereIn('code', $items->pluck('code')->unique())->pluck('name', 'code');
+        $names = PollingUnit::query()->whereIn('code', $items->pluck('code')->filter()->unique())->pluck('name', 'code');
 
-        $items->transform(fn (array $item) => [...$item, 'place' => $names[$item['code']] ?? 'PU '.$item['code']]);
+        // A public report may give only a ward and LGA (no PU code).
+        $items->transform(fn (array $item) => [...$item, 'place' => $item['place_label'] ?? ($names[$item['code']] ?? 'PU '.$item['code'])]);
     }
 }

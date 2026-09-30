@@ -1033,9 +1033,9 @@
       '<header><span class="pop-kind">' + esc(item.heading) + '</span><span class="pop-count">' + (items.length > 1 ? '1 of ' + items.length : '') + '</span>' +
       '<button type="button" class="pop-close" data-pop="close" aria-label="Close (comes back in ' + alertRepeat + ' minutes)">✕</button></header>' +
       '<h2 id="alert-pop-title">' + esc(item.title) + '</h2>' +
-      '<p class="pop-place"><b>' + esc(item.place) + '</b><br><span class="small muted">' + esc([item.lga, item.ward].filter(Boolean).join(' › ')) + ' · PU ' + esc(item.code) + ' · ' + esc(item.reference) + '</span></p>' +
+      '<p class="pop-place"><b>' + esc(item.place) + '</b><br><span class="small muted">' + esc([item.lga, item.ward].filter(Boolean).join(' › ')) + (item.code ? ' · PU ' + esc(item.code) : '') + ' · ' + esc(item.reference) + '</span></p>' +
       details +
-      '<p class="pop-agent small"><span class="badge ' + (item.channel === 'Web app' ? 'channel-web' : '') + '">via ' + esc(item.channel) + '</span> ' +
+      '<p class="pop-agent small">' + (item.public ? '<span class="badge warn">Public · unverified</span> ' : '') + '<span class="badge ' + (item.channel === 'Web app' ? 'channel-web' : '') + '">via ' + esc(item.channel) + '</span> ' +
         esc(item.agent || 'Agent') + (item.phone ? ' · <a href="tel:' + esc(item.phone) + '">' + esc(item.phone) + '</a>' : '') + (item.when ? ' · ' + esc(item.when) : '') +
         (item.media ? ' · 📎 ' + item.media + ' file' + (item.media > 1 ? 's' : '') : '') + '</p>' +
       '<div class="pop-resolve" data-pop-resolve hidden><label for="pop-note">What was done (optional)</label><textarea id="pop-note" maxlength="1000" rows="2"></textarea></div>' +

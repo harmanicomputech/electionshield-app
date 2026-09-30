@@ -56,10 +56,11 @@ class PuMonitor
             }
         }
 
-        foreach ($records(Incident::query())->unresolved()->get(['polling_unit_code', 'lga', 'ward', 'urgent']) as $incident) {
+        // Public reports without a PU code have no row here; theirs are unverified, so never "urgent".
+        foreach ($records(Incident::query())->unresolved()->whereNotNull('polling_unit_code')->get(['polling_unit_code', 'lga', 'ward', 'urgent', 'source']) as $incident) {
             $row = $status($incident->polling_unit_code, $incident->lga, $incident->ward);
             $row->openIncidents++;
-            $row->urgentIncidents += $incident->urgent ? 1 : 0;
+            $row->urgentIncidents += $incident->urgent && ! $incident->isPublic() ? 1 : 0;
         }
 
         return $statuses->sortKeys(SORT_NATURAL);

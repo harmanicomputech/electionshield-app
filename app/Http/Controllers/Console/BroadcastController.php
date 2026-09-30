@@ -36,9 +36,13 @@ class BroadcastController extends Controller
         ]);
     }
 
-    public function create(): View
+    public function create(Request $request): View
     {
-        return view('broadcasts.form', $this->formData(new Broadcast(['channel' => 'sms', 'audience' => ['groups' => ['supporters']]])));
+        // "Text them" from the Volunteers page: start with that group and area.
+        $groups = array_values(array_intersect((array) $request->query('groups', []), array_keys(Audience::GROUPS))) ?: ['supporters'];
+        $lgas = array_values(array_filter((array) $request->query('lgas', []), 'is_string'));
+
+        return view('broadcasts.form', $this->formData(new Broadcast(['channel' => 'sms', 'audience' => ['groups' => $groups, 'lgas' => $lgas]])));
     }
 
     public function edit(Broadcast $broadcast): View|RedirectResponse

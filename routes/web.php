@@ -28,6 +28,7 @@ use App\Http\Controllers\Console\RoleController;
 use App\Http\Controllers\Console\SystemController;
 use App\Http\Controllers\Console\TownHallManageController;
 use App\Http\Controllers\Console\UserController;
+use App\Http\Controllers\Console\VolunteerController;
 use App\Http\Controllers\Field\FieldController;
 use App\Http\Controllers\InstallController;
 use App\Http\Controllers\JoinController;
@@ -84,6 +85,13 @@ Route::middleware('auth')->group(function () {
         Route::post('/locations/people/{user}/tracking', [LocationController::class, 'tracking'])->middleware('can:'.Permission::MANAGE_USERS)->name('locations.person.tracking');
         Route::post('/locations/checkins/{presence}/pu', [LocationController::class, 'setPollingUnitLocation'])->name('locations.set-pu');
         Route::post('/locations/checkins/{presence}/review', [LocationController::class, 'review'])->name('locations.review');
+    });
+
+    // "How can you help?" sign-ups from USSD.
+    Route::middleware('can:'.Permission::VIEW_VOLUNTEERS)->group(function () {
+        Route::get('/volunteers', [VolunteerController::class, 'index'])->name('volunteers');
+        Route::get('/volunteers/export', [VolunteerController::class, 'export'])->middleware('can:'.Permission::EXPORT_DATA)->name('volunteers.export');
+        Route::post('/volunteers/{volunteer}/contacted', [VolunteerController::class, 'contacted'])->name('volunteers.contacted');
     });
 
     Route::get('/notifications', [PushController::class, 'show'])->name('push');

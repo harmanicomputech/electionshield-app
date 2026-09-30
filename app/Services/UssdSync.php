@@ -7,8 +7,10 @@ use App\Models\MaterialReport;
 use App\Models\Presence;
 use App\Models\Result;
 use App\Models\SyncState;
+use App\Models\Volunteer;
 use App\Support\Time;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
@@ -24,7 +26,10 @@ use Throwable;
 class UssdSync
 {
     /** Register and agents first, so records find their PU. */
-    public const RESOURCES = ['polling-units', 'agents', 'results', 'incidents', 'presences', 'materials'];
+    public const RESOURCES = ['polling-units', 'agents', 'results', 'incidents', 'presences', 'materials', 'volunteers'];
+
+    /** Newer resources an older USSD service doesn't have yet (a 404 there is not an error). */
+    private const OPTIONAL = ['volunteers'];
 
     private const PER_PAGE = 500;
 
@@ -94,6 +99,10 @@ class UssdSync
                 $query['cursor'] = $response['next_cursor'];
             }
         } catch (Throwable $e) {
+            if ($e instanceof RequestException && $e->response->status() === 404 && in_array($resource, self::OPTIONAL, true)) {
+                return ['count' => 0, 'error' => null];
+            }
+
             report($e);
             $state->fill(['last_count' => $count, 'last_error' => Str::limit($e->getMessage(), 1000)])->save();
 
@@ -128,6 +137,7 @@ class UssdSync
             'incidents' => $this->ingestor->incident($record, $rehearsal ?? $this->existingRehearsal(Incident::class, 'reference', $record['reference'] ?? null, $rehearsalMode)),
             'presences' => $this->ingestor->presence($record, $rehearsal ?? $this->existingRehearsal(Presence::class, 'ussd_id', $record['id'] ?? null, $rehearsalMode)),
             'materials' => $this->ingestor->materials($record, $rehearsal ?? $this->existingRehearsal(MaterialReport::class, 'ussd_id', $record['id'] ?? null, $rehearsalMode)),
+            'volunteers' => $this->ingestor->volunteer($record, $rehearsal ?? $this->existingRehearsal(Volunteer::class, 'reference', $record['reference'] ?? null, $rehearsalMode)),
         };
     }
 
