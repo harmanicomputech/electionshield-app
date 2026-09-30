@@ -20,7 +20,7 @@ use Illuminate\Support\Collection;
  *  - anyone who opted out of the channel (STOP) is always left out.
  *
  * Audience: {"groups": ["supporters", "agents", "coordinators", "other"],
- *            "lgas": ["Abakaliki"], "wards": ["Abakaliki|Ward 01"]}
+ *            "lgas": ["Abakaliki"], "wards": ["Abakaliki|Abakpa"]}
  */
 class Audience
 {

@@ -125,7 +125,8 @@
             @csrf
             <label for="pu-file">Newer register (optional CSV: code,name,ward,lga,registered_voters)</label>
             <input id="pu-file" type="file" name="file" accept=".csv,text/csv">
-            <p class="small muted">With no file, the bundled Ebonyi register (3,308 PUs) is loaded. Existing PUs are updated by code; nothing is deleted.</p>
+            <label class="inline"><input type="checkbox" name="replace" value="1"> Remove polling units that are not in the file</label>
+            <p class="small muted">With no file, the bundled Ebonyi register is loaded (INEC's 2,940 PUs, with INEC's approximate locations). Existing PUs are updated by code; an empty registered_voters keeps the figure already stored, and a location set from a check-in is never replaced.</p>
             <button class="button secondary" type="submit">Import polling units</button>
         </form>
     </section>

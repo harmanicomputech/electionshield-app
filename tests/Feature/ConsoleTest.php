@@ -91,7 +91,7 @@ class ConsoleTest extends TestCase
         $this->get('/spread')->assertOk()->assertSee('Abakaliki');
         $this->get('/collation')->assertOk()->assertSee('Abakaliki')->assertSee('610');
         $this->get('/collation/Abakaliki')->assertOk()->assertSee('Abakaliki Ward 01');
-        $this->get('/collation/Abakaliki/Abakaliki Ward 01')->assertOk()->assertSee('RS784321')->assertSee('EB/212/02633/007')->assertDontSee('+2348012345678');
+        $this->get('/collation/Abakaliki/Abakaliki Ward 01')->assertOk()->assertSee('RS784321')->assertSee('21202633007')->assertDontSee('+2348012345678');
         $this->get('/collation/Nowhere')->assertNotFound();
     }
 

@@ -158,7 +158,7 @@ class OfficialResultsTest extends TestCase
         $this->assertCount(2, $lines);
         $row = array_combine($header, $lines[1]);
         $this->assertSame('21202633002', $row['pu_code']);
-        $this->assertSame('EB/212/02633/002', $row['inec_code']);
+        $this->assertSame('21202633002', $row['inec_code']); // not an INEC-shaped code, shown as stored
         $this->assertSame('RS1', $row['pvt_reference']);
         $this->assertSame('+2348012345678', $row['pvt_agent_phone']);
         $this->assertSame('-70', $row['diff_APC']);

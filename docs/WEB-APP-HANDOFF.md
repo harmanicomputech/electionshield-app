@@ -6,7 +6,7 @@ Paste or attach this file at the start of the new chat. It describes the existin
 
 - **Election:** Ebonyi State governorship election, **Saturday 6 February 2027**. Timezone Africa/Lagos.
 - **Ballot as entered by agents:** APC (Francis Ogbonna Nwifuru), PDP (Ifeanyi Chukwuma Odii), LP (Splendor Oko Eze), and OTHERS (all other parties combined).
-- **Polling units:** 3,308 PUs in 13 LGAs and 169 wards, from the INEC-verified register. INEC codes like `EB/212/02633/007` are stored as digits: `21202633007`.
+- **Polling units:** INEC's 2,940 PUs in 13 LGAs and 171 wards (from INEC's polling unit locator). INEC codes like `11/01/01/007` are stored as digits: `110101007`. `registered_voters` is null until INEC's per-PU figures are loaded. Ward names repeat across LGAs, so key wards by LGA + ward.
 - **Owner:** Kehinde Amusan (amusankehinde@gmail.com).
 
 ## Product scope: Software 3, Election Shield
@@ -103,7 +103,7 @@ Every `data` object also has **`rehearsal: true|false`**. Keep rehearsal data ap
 {
   "reference": "RS784321",
   "status": "accepted",
-  "polling_unit": { "code": "21202633007", "name": "Police Station Area 007", "ward": "Abakaliki Ward 01", "lga": "Abakaliki", "registered_voters": 1507 },
+  "polling_unit": { "code": "110101007", "name": "VANCO HOTEL SPACE I", "ward": "Abakpa", "lga": "Abakaliki", "registered_voters": null },
   "accredited_voters": 1200,
   "votes": { "APC": 610, "PDP": 402, "LP": 95, "OTHERS": 18 },
   "total_valid_votes": 1125,

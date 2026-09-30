@@ -24,7 +24,7 @@
             <input id="ag-phone" name="phone_number" type="tel" inputmode="tel" value="{{ old('phone_number') }}" required placeholder="0803 123 4567">
             @error('phone_number')<div class="field-error">{{ $message }}</div>@enderror
             <label for="ag-pu">Polling unit code (leave empty for a roving agent)</label>
-            <input id="ag-pu" name="polling_unit" inputmode="numeric" value="{{ old('polling_unit', request('add')) }}" placeholder="21202633007">
+            <input id="ag-pu" name="polling_unit" inputmode="numeric" value="{{ old('polling_unit', request('add')) }}" placeholder="110101007">
             <label for="ag-pin">PIN (4 digits; leave empty for a random one)</label>
             <input id="ag-pin" name="pin" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" value="{{ old('pin') }}" autocomplete="off">
             @error('pin')<div class="field-error">{{ $message }}</div>@enderror

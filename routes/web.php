@@ -120,11 +120,11 @@ Route::middleware('auth')->group(function () {
 
         Route::get('/collation', [CollationController::class, 'index'])->name('collation');
         Route::get('/collation/{lga}', [CollationController::class, 'lga'])->name('collation.lga');
-        Route::get('/collation/{lga}/{ward}', [CollationController::class, 'ward'])->name('collation.ward');
+        Route::get('/collation/{lga}/{ward}', [CollationController::class, 'ward'])->where('ward', '.+')->name('collation.ward');
 
         Route::get('/monitor', [MonitorController::class, 'index'])->name('monitor');
         Route::get('/monitor/{lga}', [MonitorController::class, 'lga'])->name('monitor.lga');
-        Route::get('/monitor/{lga}/{ward}', [MonitorController::class, 'ward'])->name('monitor.ward');
+        Route::get('/monitor/{lga}/{ward}', [MonitorController::class, 'ward'])->where('ward', '.+')->name('monitor.ward');
 
         Route::get('/evidence/{code}', [ReportController::class, 'evidence'])->name('evidence');
         Route::get('/sitrep', [ReportController::class, 'sitrep'])->name('sitrep');
@@ -141,7 +141,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/official/pu/{code}', [OfficialResultController::class, 'edit'])->name('official.pu');
         Route::get('/official/pu/{code}/sheet', [OfficialResultController::class, 'sheet'])->name('official.pu.sheet');
         Route::get('/official/collations', [OfficialCollationController::class, 'index'])->name('official.collations');
-        Route::get('/official/collations/{level}/{lga}/{ward?}', [OfficialCollationController::class, 'edit'])->name('official.collation');
+        Route::get('/official/collations/{level}/{lga}/{ward?}', [OfficialCollationController::class, 'edit'])->where('ward', '.+')->name('official.collation');
     });
 
     Route::middleware('can:'.Permission::REVIEW_CORRECTIONS)->group(function () {
@@ -182,7 +182,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware('can:'.Permission::MANAGE_OFFICIAL_RESULTS)->group(function () {
         Route::put('/official/pu/{code}', [OfficialResultController::class, 'update'])->name('official.pu.update');
         Route::post('/official/pu/{code}/read', [OfficialResultController::class, 'read'])->middleware('throttle:20,1')->name('official.pu.read');
-        Route::put('/official/collations/{level}/{lga}/{ward?}', [OfficialCollationController::class, 'update'])->name('official.collation.update');
+        Route::put('/official/collations/{level}/{lga}/{ward?}', [OfficialCollationController::class, 'update'])->where('ward', '.+')->name('official.collation.update');
         Route::get('/official/irev', [IrevController::class, 'index'])->name('official.irev');
         Route::post('/official/irev/elections', [IrevController::class, 'elections'])->middleware('throttle:10,1')->name('official.irev.elections');
         Route::post('/official/irev/follow', [IrevController::class, 'follow'])->name('official.irev.follow');

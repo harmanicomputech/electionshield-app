@@ -47,17 +47,20 @@ class CheckinVerdict
         }
 
         $distance = Geo::distance($presence->latitude, $presence->longitude, $unit->latitude, $unit->longitude);
-        // Allow for the GPS reading's own error, up to 100 m.
-        $allowed = (float) config('election.checkin_radius_m') + min($accuracy, 100);
+        // Allow for the GPS reading's own error, up to 100 m. INEC's positions
+        // are approximate (often one point for several PUs), so allow more.
+        $approximate = $unit->hasApproximateLocation();
+        $allowed = (float) config($approximate ? 'election.checkin_radius_approx_m' : 'election.checkin_radius_m') + min($accuracy, 100);
+        $where = $approximate ? ' from INEC\'s approximate PU location' : ' from the PU';
 
         if ($suspicious) {
-            return ['status' => self::SUSPICIOUS, 'label' => $suspicious.' · '.Geo::distanceLabel($distance).' from the PU', 'class' => 'bad', 'distance' => $distance];
+            return ['status' => self::SUSPICIOUS, 'label' => $suspicious.' · '.Geo::distanceLabel($distance).$where, 'class' => 'bad', 'distance' => $distance];
         }
 
         if ($distance > $allowed) {
-            return ['status' => self::AWAY, 'label' => Geo::distanceLabel($distance).' from the PU', 'class' => 'bad', 'distance' => $distance];
+            return ['status' => self::AWAY, 'label' => Geo::distanceLabel($distance).$where, 'class' => 'bad', 'distance' => $distance];
         }
 
-        return ['status' => self::AT_PU, 'label' => 'At the PU ('.Geo::distanceLabel($distance).')', 'class' => 'good', 'distance' => $distance];
+        return ['status' => self::AT_PU, 'label' => ($approximate ? 'Near the PU (' : 'At the PU (').Geo::distanceLabel($distance).($approximate ? ', INEC location is approximate)' : ')'), 'class' => 'good', 'distance' => $distance];
     }
 }

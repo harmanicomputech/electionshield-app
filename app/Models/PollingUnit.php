@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\PollingUnitImporter;
 use Illuminate\Database\Eloquent\Model;
 
 class PollingUnit extends Model
@@ -14,7 +15,7 @@ class PollingUnit extends Model
     }
 
     /**
-     * INEC codes like EB/212/02633/007 are stored as digits: 21202633007.
+     * INEC codes like 11/01/01/007 (state/LGA/ward/PU) are stored as digits: 110101007.
      */
     public static function normalizeCode(string $code): string
     {
@@ -22,12 +23,20 @@ class PollingUnit extends Model
     }
 
     /**
-     * EB/212/02633/007 for a stored code of 21202633007.
+     * 11/01/01/007 for a stored code of 110101007.
      */
     public function inecCode(): string
     {
-        return strlen($this->code) === 11
-            ? 'EB/'.substr($this->code, 0, 3).'/'.substr($this->code, 3, 5).'/'.substr($this->code, 8)
-            : $this->code;
+        return preg_match('/^(\d{2})(\d{2})(\d{2})(\d{3})$/', (string) $this->code, $part)
+            ? "{$part[1]}/{$part[2]}/{$part[3]}/{$part[4]}"
+            : (string) $this->code;
+    }
+
+    /**
+     * Whether the PU's position is only INEC's approximate one.
+     */
+    public function hasApproximateLocation(): bool
+    {
+        return $this->location_source === PollingUnitImporter::INEC_LOCATION;
     }
 }

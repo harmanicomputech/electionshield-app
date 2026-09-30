@@ -59,7 +59,7 @@ class Volunteer extends Model
     }
 
     /**
-     * "Abakaliki Ward 03" → "Ward 03" when the LGA is shown next to it.
+     * "Abakaliki Ward 03" → "Ward 03" when the LGA is shown next to it (INEC ward names are kept as they are).
      */
     public function wardLabel(): string
     {

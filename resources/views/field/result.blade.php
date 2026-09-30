@@ -17,7 +17,7 @@
     @csrf
     @if ($existing)<input type="hidden" name="correction" value="1">@endif
     @unless ($agent?->polling_unit_code)
-        <label for="polling_unit">PU code (digits only, e.g. 21202633007)</label>
+        <label for="polling_unit">PU code (digits only, e.g. 110101007 for 11/01/01/007)</label>
         <input id="polling_unit" name="polling_unit" inputmode="numeric" value="{{ old('polling_unit') }}" required>
     @endunless
 

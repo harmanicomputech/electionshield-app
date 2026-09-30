@@ -15,7 +15,7 @@
     <h2>Find a polling unit</h2>
     <form method="get" action="{{ route('official') }}" class="filters" style="margin-bottom:0">
         <div class="wide">
-            <label for="code">PU code (e.g. EB/212/02633/007 or 21202633007)</label>
+            <label for="code">PU code (e.g. 11/01/01/007 or 110101007)</label>
             <input id="code" type="text" name="code" inputmode="numeric" autocomplete="off" required>
         </div>
         <div class="wide"><button class="button" type="submit">Open</button></div>

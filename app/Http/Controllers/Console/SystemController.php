@@ -127,20 +127,21 @@ class SystemController extends Controller
      */
     public function importRegister(Request $request, PollingUnitImporter $importer): RedirectResponse
     {
-        $request->validate(['file' => ['nullable', 'file', 'max:4096', 'mimetypes:text/plain,text/csv,application/csv,application/vnd.ms-excel']]);
+        $request->validate(['file' => ['nullable', 'file', 'max:4096', 'mimetypes:text/plain,text/csv,application/csv,application/vnd.ms-excel'], 'replace' => ['nullable', 'boolean']]);
         $upload = $request->file('file');
 
         try {
-            $result = $importer->import($upload ? $upload->getRealPath() : PollingUnitImporter::bundledPath());
+            $result = $importer->import($upload ? $upload->getRealPath() : PollingUnitImporter::bundledPath(), $request->boolean('replace'));
         } catch (Throwable $e) {
             return back()->with('error', $e->getMessage());
         }
 
         $source = $upload ? $upload->getClientOriginalName() : 'the bundled Ebonyi register';
-        Audit::record('system.pu_import', "Imported polling units from {$source}: {$result['created']} added, {$result['updated']} updated".($result['errors'] ? ', '.count($result['errors']).' rows skipped' : ''));
+        $removed = isset($result['removed']) ? ", {$result['removed']} removed" : '';
+        Audit::record('system.pu_import', "Imported polling units from {$source}: {$result['created']} added, {$result['updated']} updated{$removed}".($result['errors'] ? ', '.count($result['errors']).' rows skipped' : ''));
 
         return back()
-            ->with($result['errors'] ? 'error' : 'status', "Polling units from {$source}: {$result['created']} added, {$result['updated']} updated.".($result['errors'] ? ' Some rows were skipped: '.implode('; ', array_slice($result['errors'], 0, 5)) : ''));
+            ->with($result['errors'] ? 'error' : 'status', "Polling units from {$source}: {$result['created']} added, {$result['updated']} updated{$removed}.".($result['errors'] ? ' Some rows were skipped: '.implode('; ', array_slice($result['errors'], 0, 5)) : ''));
     }
 
     /**

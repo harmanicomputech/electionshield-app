@@ -123,7 +123,7 @@ class ElectionDayToolsTest extends TestCase
         $this->get('/evidence/EB/212/02633/001')->assertNotFound();
         $this->get('/evidence/21202633001')->assertOk()
             ->assertSee('evidence pack')
-            ->assertSee('EB/212/02633/001')
+            ->assertSee('21202633001')
             ->assertSee('differ by up to 100 votes')
             ->assertSee('-100')
             ->assertSee('Prepared')

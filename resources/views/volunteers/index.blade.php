@@ -110,7 +110,7 @@
                             @csrf
                             <input type="hidden" name="contacted" value="1">
                             <label for="note-{{ $volunteer->reference }}">Note (optional)</label>
-                            <input id="note-{{ $volunteer->reference }}" name="follow_up_note" maxlength="500" placeholder="e.g. Will canvass Ward 03 on Saturday">
+                            <input id="note-{{ $volunteer->reference }}" name="follow_up_note" maxlength="500" placeholder="e.g. Will canvass their ward on Saturday">
                             <button class="button" type="submit">Save</button>
                         </form>
                     </details>

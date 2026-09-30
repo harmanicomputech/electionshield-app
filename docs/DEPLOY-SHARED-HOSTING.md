@@ -55,7 +55,7 @@ DASHBOARD_WEBHOOK_SECRET=<USSD_WEBHOOK_SECRET from this app's .env>
 ```
 
 Then:
-1. On this app's **System** page, press **Full import**. It pulls the PU register (3,308 PUs), agents and all results.
+1. On this app's **System** page, press **Full import**. It pulls the PU register (INEC's 2,940 PUs), agents and all results.
 2. In the USSD console, press **Settings → Send all existing data to the dashboard**.
 3. On the System page, **Last event** should now show a recent event.
 
@@ -106,7 +106,7 @@ Create an API key at console.anthropic.com, put it in `.env` as `ANTHROPIC_API_K
 
 ## EC8A photos and disk space
 
-Photos are stored in `election-shield-web/storage/app/private/ec8a/`, outside the web root, and are shown only to logged-in users. Each is about 100–500 KB after the phone shrinks it, so photos of all 3,308 PUs need roughly 1–2 GB. Check your hosting plan's disk quota before election day, and back up that folder with the database afterwards, as it is evidence.
+Photos are stored in `election-shield-web/storage/app/private/ec8a/`, outside the web root, and are shown only to logged-in users. Each is about 100–500 KB after the phone shrinks it, so photos of all 2,940 PUs need roughly 1–2 GB. Check your hosting plan's disk quota before election day, and back up that folder with the database afterwards, as it is evidence.
 
 ## Rehearsals
 

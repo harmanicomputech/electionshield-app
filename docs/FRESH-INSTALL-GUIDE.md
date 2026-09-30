@@ -115,7 +115,7 @@ DirectAdmin → **Select PHP version** (or **PHP settings**) for `electionshield
 2. You see **Create the first admin**. Enter:
    - **Setup key:** the `ADMIN_PASSWORD` value from `.env`;
    - your name, email and a password of at least 10 characters.
-3. Press **Create admin account**. This builds the database and loads the register of **3,308 polling units**, then opens the System page with "Welcome …".
+3. Press **Create admin account**. This builds the database and loads the register of **2,940 polling units** (INEC's), then opens the System page with "Welcome …".
 
 If you see "Database not reachable" instead, check the `DB_…` lines in `.env`.
 

@@ -94,6 +94,11 @@ return [
     // (plus the GPS reading's own error, up to 100 m).
     'checkin_radius_m' => (int) env('CHECKIN_RADIUS_M', 300),
 
+    // The same when the PU's position is only INEC's approximate one (from
+    // its PU locator, often one point for several PUs). Setting the PU's
+    // location from a check-in (Locations page) switches to the radius above.
+    'checkin_radius_approx_m' => (int) env('CHECKIN_RADIUS_APPROX_M', 1500),
+
     // A wide box around the state [min lat, max lat, min lng, max lng]:
     // positions outside it are flagged.
     'state_bounds' => [5.4, 7.0, 7.3, 8.6],

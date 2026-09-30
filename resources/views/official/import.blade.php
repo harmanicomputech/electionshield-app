@@ -37,11 +37,11 @@
     <h2>File formats</h2>
     <p class="small">IReV results (irev_status is <code>uploaded</code> or <code>not_uploaded</code>; leave the figures empty for not_uploaded):</p>
     <pre class="small"><code>pu_code,irev_status,accredited,{{ $partyColumns }},rejected,note
-EB/212/02633/007,uploaded,1200,610,402,95,18,21,
-21202633008,not_uploaded,,,,,,,No sheet on IReV at 9pm</code></pre>
+11/01/01/007,uploaded,1200,610,402,95,18,21,
+110101008,not_uploaded,,,,,,,No sheet on IReV at 9pm</code></pre>
     <p class="small">Declared collations (level is <code>ward</code> for EC8B or <code>lga</code> for EC8C; leave ward empty for an LGA):</p>
     <pre class="small"><code>level,lga,ward,accredited,{{ $partyColumns }},rejected,note
-ward,Abakaliki,Abakaliki Ward 01,5400,2710,1802,640,88,97,
+ward,Abakaliki,Abakpa,5400,2710,1802,640,88,97,
 lga,Abakaliki,,61020,30112,21440,6010,902,1203,</code></pre>
 </section>
 @endsection
