@@ -13,13 +13,34 @@ use Illuminate\Support\Collection;
  * The figures behind the Voter intelligence page: the area's voters, its
  * sub-areas (LGAs, wards or PUs) and a profile of who the voters are.
  *
- * Every figure comes from the PU register or a sourced VoterStat. Where an
- * area has no figures of its own, the profile shows the nearest larger
- * area's (ward → LGA → state → Nigeria), labelled as such; nothing is
- * estimated or scaled down.
+ * Figures come from the PU register or a sourced VoterStat. Until INEC's
+ * figures for an area are loaded, its voters are estimated: the state's
+ * INEC total shared equally across its polling units. Where an area has no
+ * demographic figures of its own, the nearest larger area's are used
+ * (ward → LGA → state); INEC's national profile, the only one it publishes
+ * for 2023, is applied to the area's voters and shown as the state's
+ * estimate. Estimates are always marked as such.
  */
 class VoterIntelligence
 {
+    /** @var array{0: int, 1: int}|false|null [state total, PUs in the register], false when unknown */
+    private array|false|null $base = null;
+
+    /**
+     * Estimated voters for an area of $units polling units: the state's INEC
+     * total shared equally across the register's PUs. Null if either is unknown.
+     */
+    public function estimate(int $units): ?int
+    {
+        if ($this->base === null) {
+            $total = $this->officialTotal('state', '')?->count;
+            $all = PollingUnit::query()->count();
+            $this->base = $total && $all ? [$total, $all] : false;
+        }
+
+        return $this->base ? (int) round($this->base[0] * $units / $this->base[1]) : null;
+    }
+
     /**
      * The area and the larger areas around it, smallest first.
      *
@@ -49,9 +70,10 @@ class VoterIntelligence
      * For each dimension, the figures of the nearest area in the chain that has any.
      *
      * @param  list<array{level: string, area: string, label: string}>  $chain
+     * @param  ?int  $voters  the area's voters, to turn INEC's national shares into counts here
      * @return array<string, array<string, mixed>>
      */
-    public function profile(array $chain): array
+    public function profile(array $chain, ?int $voters = null): array
     {
         $stats = VoterStat::query()
             ->where(function ($query) use ($chain) {
@@ -71,13 +93,20 @@ class VoterIntelligence
                 }
 
                 $registered = ($stats[$link['level'].'#'.$link['area']] ?? collect())->first(fn (VoterStat $stat) => $stat->dimension === 'registered' && $stat->category === 'total');
+                $estimated = $link['level'] === 'national';
+                $shares = $this->rows($dimension, $rows, $registered?->count);
+                if ($estimated) {
+                    // INEC's national shares applied to this area's voters.
+                    $shares = array_map(fn ($row) => [...$row, 'count' => $row['percent'] !== null && $voters ? (int) round($row['percent'] / 100 * $voters) : null], $shares);
+                }
                 $profile[$dimension] = [
                     'label' => $label,
                     'hint' => $hint,
-                    'rows' => $this->rows($dimension, $rows, $registered?->count),
-                    'from' => $link['label'],
+                    'rows' => $shares,
+                    'from' => $estimated ? config('election.state', 'Ebonyi').' (est.)' : $link['label'],
                     'level' => $link['level'],
-                    'inherited' => $position > 0,
+                    'estimated' => $estimated,
+                    'inherited' => $position > 0 && ! $estimated,
                     'sources' => $rows->map(fn (VoterStat $stat) => ['source' => $stat->source, 'url' => $stat->source_url, 'as_of' => $stat->as_of])->unique('source')->values()->all(),
                 ];
                 break;
@@ -174,7 +203,8 @@ class VoterIntelligence
                 'level' => $childLevel,
                 'official_voters' => $official,
                 // INEC's total when loaded, else the register's (only when every PU has a figure).
-                'voters' => $official ?? ($complete ? $row['register_voters'] : null),
+                'voters' => $official ?? ($complete ? $row['register_voters'] : null) ?? $this->estimate($row['units']),
+                'estimated' => $official === null && ! $complete,
                 'pvc_uncollected' => $figures->first(fn ($stat) => $stat->dimension === 'pvc' && $stat->category === 'uncollected')?->count,
                 'first_time' => $figures->first(fn ($stat) => $stat->dimension === 'first_time' && $stat->category === 'new')?->count,
                 'volunteers' => $volunteers[$row['name']] ?? 0,
@@ -227,7 +257,9 @@ class VoterIntelligence
     public function insights(array $profile, Collection $children, string $childLabel): array
     {
         $insights = [];
-        $share = fn (array $row) => $row['percent'] !== null ? ' ('.rtrim(rtrim(number_format($row['percent'], 1), '0'), '.').'%)' : '';
+        $share = fn (array $row, bool $withCount = true) => $row['percent'] !== null
+            ? ' ('.rtrim(rtrim(number_format($row['percent'], 1), '0'), '.').'%'.($withCount && $row['count'] ? ', about '.number_format($row['count']) : '').')'
+            : '';
         $largest = fn (string $dimension) => collect($profile[$dimension]['rows'] ?? [])->sortByDesc(fn ($row) => $row['percent'] ?? $row['count'] ?? 0)->first();
 
         if ($row = $largest('age')) {
@@ -246,7 +278,7 @@ class VoterIntelligence
         if (isset($profile['pvc'])) {
             $row = collect($profile['pvc']['rows'])->firstWhere('key', 'uncollected');
             if ($row && $row['count']) {
-                $insights[] = ['text' => number_format($row['count']).' PVCs not collected'.$share($row).': these voters can\'t vote until they collect them.', 'from' => $profile['pvc']['from']];
+                $insights[] = ['text' => number_format($row['count']).' PVCs not collected'.$share($row, false).': these voters can\'t vote until they collect them.', 'from' => $profile['pvc']['from']];
             }
         }
         if (isset($profile['first_time'])) {
@@ -257,9 +289,10 @@ class VoterIntelligence
         }
 
         $known = $children->filter(fn ($child) => $child['voters'] !== null);
-        if ($known->count() >= 2) {
+        // Not when every figure is the same estimate (the PUs of a ward).
+        if ($known->count() >= 2 && $known->pluck('voters')->unique()->count() > 1) {
             $top = $known->take(3)->map(fn ($child) => $child['name'].' ('.number_format($child['voters']).')')->implode(', ');
-            $insights[] = ['text' => "Most voters: {$top}.", 'from' => null];
+            $insights[] = ['text' => "Most voters: {$top}.", 'from' => $known->take(3)->contains('estimated', true) ? config('election.state', 'Ebonyi').' (est.)' : null];
         }
         $uncollected = $children->filter(fn ($child) => $child['pvc_uncollected'])->sortByDesc('pvc_uncollected');
         if ($uncollected->isNotEmpty()) {

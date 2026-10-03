@@ -670,7 +670,7 @@ a, button, summary, label, select, input, textarea, .button { touch-action: mani
 .vi-profile .bars { gap: 8px; margin: 8px 0; }
 .vi-source { margin: 8px 0 0; overflow-wrap: anywhere; }
 .vi-code { display: block; font-weight: 400; }
-.vi-voters .track { margin-top: 4px; min-width: 80px; }
+.vi-voters .track { display: block; margin: 4px 0 0 auto; width: 100%; max-width: 140px; min-width: 80px; }
 .vi-voters small { display: block; }
 .vi-sources ul { margin: 0; padding-left: 20px; overflow-wrap: anywhere; }
 .vi-form { display: grid; gap: 8px; padding: 12px 0; border-bottom: 1px solid var(--line); }
@@ -680,3 +680,5 @@ a, button, summary, label, select, input, textarea, .button { touch-action: mani
 .vi-loaded li { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 @media (max-width: 767.98px) { .vi-voters .track { width: 100%; } table.stack td.vi-voters { flex-direction: column; align-items: flex-end; } }
 @media (min-width: 1024px) { .vi-stats.five { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
+.vi-est { margin: -4px 0 16px; }
+.vi-voters .vi-est-tag { display: inline; }

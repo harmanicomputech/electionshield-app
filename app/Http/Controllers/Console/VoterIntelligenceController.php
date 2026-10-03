@@ -92,10 +92,15 @@ class VoterIntelligenceController extends Controller
     private function page(Request $request, string $level, array $data): View
     {
         $children = $data['children'];
-        $profile = $this->intelligence->profile($data['chain']);
         $registerVoters = $level === 'pu'
             ? $data['unit']->registered_voters
             : ($children->every(fn ($child) => $child['units_with_voters'] === $child['units']) && $children->isNotEmpty() ? $children->sum('register_voters') : null);
+        $units = $level === 'pu' ? 1 : $children->sum('units');
+        // INEC's figure, else the register's, else the estimate (state total shared across PUs).
+        $voters = $data['official']?->count ?? $registerVoters;
+        $estimated = $voters === null;
+        $voters ??= $this->intelligence->estimate($units);
+        $profile = $this->intelligence->profile($data['chain'], $voters);
 
         $sources = collect($profile)->flatMap(fn ($dimension) => $dimension['sources'])
             ->when($data['official'], fn ($sources) => $sources->push(['source' => $data['official']->source, 'url' => $data['official']->source_url, 'as_of' => $data['official']->as_of]))
@@ -106,8 +111,11 @@ class VoterIntelligenceController extends Controller
             'profile' => $profile,
             'insights' => $this->intelligence->insights($profile, $children, $data['childLabel']),
             'registerVoters' => $registerVoters,
+            'voters' => $voters,
+            'votersEstimated' => $estimated,
+            'perUnit' => $this->intelligence->estimate(1),
             'unitsWithVoters' => $level === 'pu' ? (int) ($data['unit']->registered_voters !== null) : $children->sum('units_with_voters'),
-            'units' => $level === 'pu' ? 1 : $children->sum('units'),
+            'units' => $units,
             'sources' => $sources,
             'maxVoters' => max(1, (int) $children->max('voters')),
             'canManage' => $request->user()->can(Permission::MANAGE_VOTER_DATA),

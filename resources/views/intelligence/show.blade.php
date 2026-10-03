@@ -5,16 +5,13 @@
 @php
     $fmt = fn (?int $n) => $n === null ? '—' : number_format($n);
     $pct = fn (?float $p) => $p === null ? '' : rtrim(rtrim(number_format($p, 1), '0'), '.').'%';
-    $voters = $official?->count ?? $registerVoters;
+    $anyEstimate = $votersEstimated || $children->contains('estimated', true);
     $anyPvc = $children->contains(fn ($child) => $child['pvc_uncollected'] !== null);
     $anyFirst = $children->contains(fn ($child) => $child['first_time'] !== null);
     $showWards = $level === 'state';
     $showVolunteers = $level !== 'ward' && $level !== 'pu';
     $state = config('election.state', 'Ebonyi');
-    $fromBadge = fn (array $dimension) => match ($dimension['level']) {
-        'national' => 'warn',
-        default => $dimension['inherited'] ? '' : 'good',
-    };
+    $fromBadge = fn (array $dimension) => $dimension['estimated'] || $dimension['inherited'] ? '' : 'good';
     $missingHint = [
         'pvc' => 'INEC publishes PVC collection by state and LGA, and PU by PU before governorship elections (inecnigeria.org/statistics/pvc).',
         'first_time' => 'INEC publishes new registrations from continuous voter registration (CVR) by state and LGA.',
@@ -33,14 +30,14 @@
     <h1>{{ $title }}</h1>
     @isset($subtitle)<p class="muted">{{ $subtitle }}</p>@endisset
     @if ($level === 'state')
-        <p class="muted">Voters in each LGA, ward and polling unit, and who they are, to decide where and to whom to campaign. Every figure shows where it comes from; where an area has no figures of its own, the nearest larger area's are shown and labelled. Nothing is estimated.</p>
+        <p class="muted">Voters in each LGA, ward and polling unit, and who they are, to decide where and to whom to campaign. Figures marked <b>est.</b> are estimates until INEC's figures for that area are loaded; see the note under each table.</p>
     @endif
 </div>
 
 <div class="stats vi-stats {{ $level === 'state' ? 'five' : '' }}">
     <div class="stat">
         <b>{{ $fmt($voters) }}</b>
-        <span>Registered voters @if ($official) <small class="muted">· {{ $official->source }}@if ($official->as_of), {{ $official->as_of->format('M Y') }}@endif</small>@elseif ($registerVoters !== null) <small class="muted">· sum of the PU register</small>@else <small class="muted">· not loaded yet</small>@endif</span>
+        <span>Registered voters @if ($official) <small class="muted">· {{ $official->source }}@if ($official->as_of), {{ $official->as_of->format('M Y') }}@endif</small>@elseif ($registerVoters !== null) <small class="muted">· sum of the PU register</small>@elseif ($voters !== null) <small class="muted">· est.</small>@else <small class="muted">· not loaded yet</small>@endif</span>
     </div>
     @if ($level !== 'pu')
         <div class="stat"><b>{{ number_format($units) }}</b><span>Polling units @if ($unitsWithVoters && $unitsWithVoters < $units) <small class="muted">· {{ number_format($unitsWithVoters) }} with voter numbers</small>@endif</span></div>
@@ -51,15 +48,13 @@
             <div class="stat"><b>{{ number_format($children->sum('volunteers')) }}</b><span>Volunteers signed up</span></div>
         @endif
         <div class="stat"><b>{{ number_format($children->sum('agents')) }}</b><span>Agents assigned</span></div>
-    @else
-        <div class="stat"><b>{{ $unit->registered_voters === null ? '—' : number_format($unit->registered_voters) }}</b><span>On the PU register</span></div>
     @endif
 </div>
 
-@if ($level !== 'pu' && $unitsWithVoters === 0 && ($level === 'state' || ! $official))
-    <div class="card vi-note">
-        <p><b>Registered voters {{ $level === 'state' ? 'per LGA, ward and polling unit' : 'for '.$title }} aren't loaded yet</b>, so they show “—”. Nothing is estimated. They appear as soon as INEC's figures are loaded: registered voters per polling unit fill in every level, or an LGA or ward total can be loaded on its own.@if ($canManage && $level === 'state') See <a href="#data">Load figures</a> below.@elseif ($canManage) See <a href="{{ route('intelligence') }}#data">Load figures</a> on the Ebonyi page.@endif</p>
-    </div>
+@if ($anyEstimate && $perUnit)
+    <p class="small muted vi-est">
+        <b>est.</b> = estimated: {{ $state }}'s INEC 2023 total of {{ number_format(\App\Models\VoterStat::query()->where(['level' => 'state', 'area' => '', 'dimension' => 'registered', 'category' => 'total'])->value('count')) }} registered voters shared equally across its polling units (about {{ number_format($perUnit) }} each), until INEC's figures for an area are loaded.@if ($canManage) <a href="{{ route('intelligence') }}#data">Load figures</a>@endif
+    </p>
 @endif
 
 @if ($insights)
@@ -67,11 +62,11 @@
         <h2>Who to target here</h2>
         <ul class="vi-insights">
             @foreach ($insights as $insight)
-                <li>{{ $insight['text'] }}@if ($insight['from']) <span class="badge {{ str_starts_with($insight['from'], 'Nigeria') ? 'warn' : '' }}">{{ $insight['from'] }}</span>@endif</li>
+                <li>{{ $insight['text'] }}@if ($insight['from']) <span class="badge">{{ $insight['from'] }}</span>@endif</li>
             @endforeach
         </ul>
-        @if (collect($insights)->contains(fn ($i) => $i['from'] && str_starts_with($i['from'], 'Nigeria')))
-            <p class="small muted">Figures marked “Nigeria (national)” are INEC's national profile: INEC hasn't published these for {{ $state }} or below, so they show the general picture, not this area's.</p>
+        @if (collect($insights)->contains(fn ($i) => $i['from'] && str_ends_with($i['from'], '(est.)')))
+            <p class="small muted">{{ $state }} (est.): INEC's 2023 voter profile (age, gender, occupation) applied to this area's voters.</p>
         @endif
     </section>
 @endif
@@ -84,7 +79,7 @@
         <section class="card">
             <h3>{{ $label }}</h3>
             @if ($dimension)
-                <p class="small"><span class="badge {{ $fromBadge($dimension) }}">{{ $dimension['inherited'] ? 'No local figures · showing '.$dimension['from'] : 'Figures for '.$dimension['from'] }}</span></p>
+                <p class="small"><span class="badge {{ $fromBadge($dimension) }}">{{ $dimension['estimated'] ? $dimension['from'] : ($dimension['inherited'] ? 'No local figures · showing '.$dimension['from'] : 'Figures for '.$dimension['from']) }}</span></p>
                 <ul class="bars">
                     @php $top = max(1, collect($dimension['rows'])->max(fn ($row) => $row['percent'] ?? 0)); @endphp
                     @foreach ($dimension['rows'] as $row)
@@ -95,7 +90,7 @@
                         </li>
                     @endforeach
                 </ul>
-                <p class="small muted vi-source">Source: @foreach ($dimension['sources'] as $source)@if ($source['url'])<a href="{{ $source['url'] }}" target="_blank" rel="noopener">{{ $source['source'] }}</a>@else{{ $source['source'] }}@endif{{ $source['as_of'] ? ', '.$source['as_of']->format('j M Y') : '' }}{{ $loop->last ? '' : '; ' }}@endforeach</p>
+                <p class="small muted vi-source">{{ $dimension['estimated'] ? 'Shares from' : 'Source:' }} @foreach ($dimension['sources'] as $source)@if ($source['url'])<a href="{{ $source['url'] }}" target="_blank" rel="noopener">{{ $source['source'] }}</a>@else{{ $source['source'] }}@endif{{ $source['as_of'] ? ', '.$source['as_of']->format('j M Y') : '' }}{{ $loop->last ? '' : '; ' }}@endforeach</p>
             @else
                 <p class="muted small">No figures loaded yet. {{ $missingHint[$key] ?? '' }}</p>
             @endif
@@ -126,7 +121,7 @@
                         <tr>
                             <td class="key"><a class="rowlink" href="{{ $childLink($child) }}">{{ $child['name'] }}</a>@if ($child['inec_code'])<small class="muted vi-code">{{ $child['inec_code'] }}</small>@endif</td>
                             <td class="num vi-voters" data-label="Registered voters">
-                                {{ $fmt($child['voters']) }}
+                                {{ $fmt($child['voters']) }}@if ($child['estimated'] && $child['voters'] !== null) <small class="muted vi-est-tag">est.</small>@endif
                                 @if ($child['voters'] !== null)<span class="track slim"><span class="fill slot1" style="width: {{ $child['voters'] / $maxVoters * 100 }}%"></span></span>@endif
                                 @if ($child['voters'] === null && $child['units_with_voters'] > 0)<small class="muted">{{ $child['units_with_voters'] }}/{{ $child['units'] }} PUs known</small>@endif
                             </td>

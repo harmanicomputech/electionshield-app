@@ -37,12 +37,15 @@ class VoterIntelligenceTest extends TestCase
             ->assertSee('Ebonyi State')
             ->assertSee('1,597,646')                       // INEC's 2023 Ebonyi total
             ->assertSee('2,940')                           // PUs in the register
-            ->assertSee('Registered voters per LGA, ward and polling unit aren')
+            ->assertSee('shared equally across its polling units (about 543 each)')
             ->assertSee('Ikwo')->assertSee(route('intelligence.lga', 'Ikwo'), false)
-            ->assertSee('No local figures · showing Nigeria (national)')
-            ->assertSee('Largest age group: 18–34 (youth) (39.7%).', false)
-            ->assertSee('More men than women: Men (52.5%).')
-            ->assertSee('Largest occupation group recorded: Students (27.8%).')
+            ->assertSee('165,742')                         // Ikwo: 305 of 2,940 PUs, est.
+            ->assertSee('Ebonyi (est.)')
+            ->assertDontSee('Nigeria (national)')
+            ->assertSee('Largest age group: 18–34 (youth) (39.7%, about 633,467).', false)
+            ->assertSee('More men than women: Men (52.5%, about 838,764).')
+            ->assertSee('Largest occupation group recorded: Students (27.8%, about 444,146).')
+            ->assertSee('Most voters: Ikwo (165,742), Ohaukwu (165,199), Izzi (162,482).')
             ->assertSee('INEC 2023 register, presented 11 Jan 2023 (Premium Times)')
             ->assertSee('Load figures');
         // Nothing made up: no PVC or first-time figures are built in.
@@ -57,16 +60,20 @@ class VoterIntelligenceTest extends TestCase
         Agent::create(['ussd_id' => 1, 'name' => 'Ada', 'phone_number' => '+2348011111111', 'polling_unit_code' => '110101001']);
         Volunteer::create(['reference' => 'VL1', 'name' => 'Obi', 'phone_number' => '+2348022222222', 'contact_phone' => '+2348022222222', 'lga' => 'Abakaliki', 'ward' => 'Abakpa', 'roles' => ['canvass'], 'registered_at' => now()]);
 
-        $this->get('/intelligence/Ikwo')->assertOk()->assertSee('Registered voters for Ikwo LGA aren')->assertSee('Load figures');
-        $this->get('/intelligence/Abakaliki')->assertOk()->assertSee('Abakaliki LGA')->assertSee('Abakpa')->assertDontSee('Registered voters for Abakaliki LGA aren')
+        $this->get('/intelligence/Ikwo')->assertOk()->assertSee('165,742')->assertSee('· est.</small>', false)->assertSee('about 65,717');
+        $this->get('/intelligence/Abakaliki')->assertOk()->assertSee('Abakaliki LGA')->assertSee('Abakpa')
             ->assertSee('1/', false)                      // 1 of Abakpa's PUs has a voter number
             ->assertSee(route('intelligence.ward', ['Abakaliki', 'Abakpa']), false);
         $this->get('/intelligence/Abakaliki/Abakpa')->assertOk()->assertSee('Abakpa ward')
             ->assertSee('ADAZI-ENU HALL I')->assertSee('11/01/01/001')->assertSee('700')
-            ->assertSee('polling units here have no agent assigned');
-        $this->get('/intelligence/Abakaliki/Amagu / Enyigba')->assertOk();
+            ->assertSee('polling units here have no agent assigned')
+            ->assertSee('Most voters: ADAZI-ENU HALL I (700),');
+        // Every PU the same estimate: no "most voters" ranking.
+        $this->get('/intelligence/Abakaliki/Amagu / Enyigba')->assertOk()->assertSee('· est.</small>', false)->assertDontSee('Most voters:');
         $this->get('/intelligence/pu/11/01/01/001')->assertNotFound();
-        $this->get('/intelligence/pu/110101001')->assertOk()->assertSee('ADAZI-ENU HALL I')->assertSee('Abakpa ward, Abakaliki LGA');
+        $this->get('/intelligence/pu/110101001')->assertOk()->assertSee('ADAZI-ENU HALL I')->assertSee('Abakpa ward, Abakaliki LGA')
+            ->assertSee('700')->assertDontSee('· est.</small>', false);  // its real figure
+        $this->get('/intelligence/pu/110101002')->assertOk()->assertSee('543')->assertSee('· est.</small>', false);
         $this->get('/intelligence/Nowhere')->assertNotFound();
         $this->get('/intelligence/Ebonyi/Amagu / Enyigba')->assertNotFound();
     }
@@ -100,7 +107,9 @@ class VoterIntelligenceTest extends TestCase
         $this->get('/intelligence')->assertSee('PVCs not collected')->assertSee('12,000')->assertSee('Most PVCs not collected: Ikwo (12,000).');
         $this->get('/intelligence/Abakaliki')->assertSee('First-time voters')->assertSee('300');
         // A PU with its own age figure; other dimensions come from larger areas.
-        $this->get('/intelligence/pu/110101001')->assertSee('Figures for this polling unit')->assertSee('No local figures · showing Nigeria (national)');
+        $this->get('/intelligence/pu/110101001')->assertSee('Figures for this polling unit')->assertSee('Ebonyi (est.)');
+        // Ikwo's own gender figures are real, not estimates.
+        $this->get('/intelligence/Ikwo')->assertSee('Figures for Ikwo LGA')->assertDontSee('· est.</small>', false);
 
         // Uploading again replaces rather than duplicates; removing a source removes its figures.
         $this->post('/intelligence/data/figures', ['file' => $this->csv("level,lga,ward,pu_code,dimension,category,count,percent,source\nlga,Ikwo,,,pvc,uncollected,11000,,INEC PVC statistics\n")]);
