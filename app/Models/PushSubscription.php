@@ -13,6 +13,8 @@ class PushSubscription extends Model
         'incidents' => 'Other incidents (late materials, delays and the like)',
         'results' => 'Each new result submitted by an agent',
         'corrections' => 'Corrections waiting for review',
+        'result_checks' => 'Results the automatic checks flag as serious (e.g. more votes than accredited, the EC8A photo shows other figures)',
+        'briefs' => 'The situation brief (every half hour on election day)',
     ];
 
     protected $fillable = ['user_id', 'endpoint', 'endpoint_hash', 'public_key', 'auth_token', 'content_encoding', 'topics', 'device'];

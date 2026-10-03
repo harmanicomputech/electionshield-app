@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Console;
 use App\Http\Controllers\Controller;
 use App\Models\Attachment;
 use App\Models\Incident;
+use App\Services\Ai\Claude;
+use App\Services\Ai\IncidentTriage;
 use App\Services\LgaMap;
 use App\Support\Audit;
 use App\Support\Settings;
@@ -22,7 +24,7 @@ use Illuminate\View\View;
  */
 class IncidentController extends Controller
 {
-    public function index(Request $request): View
+    public function index(Request $request, IncidentTriage $triage, Claude $ai): View
     {
         $filters = $request->validate([
             'status' => ['nullable', Rule::in(['unresolved', Incident::OPEN, Incident::ACKNOWLEDGED, Incident::RESOLVED, 'all'])],
@@ -49,8 +51,9 @@ class IncidentController extends Controller
             ->when($filters['lga'] ?? null, fn (Builder $query, string $lga) => $query->where('lga', $lga))
             ->when($filters['source'] ?? null, fn (Builder $query, string $source) => $query->where('source', $source))
             ->with('pollingUnit:code,name')
-            // Urgent and unhandled first (agents' before the public's unverified ones), then newest.
-            ->orderByRaw("case when resolved_at is null and acknowledged_at is null and urgent = 1 then (case when source = 'public' then 1 else 0 end) else 2 end")
+            // Unhandled first: by the AI's priority when it has one, else urgent agent
+            // reports, then urgent public ones; then everything else, newest first.
+            ->orderByRaw("case when resolved_at is null and acknowledged_at is null then (case ai_priority when 'critical' then 0 when 'high' then 1 when 'medium' then 3 when 'low' then 4 else (case when urgent = 1 and source != 'public' then 1 when urgent = 1 then 2 else 3 end) end) else 5 end")
             ->latest('reported_at')
             ->latest('id')
             ->simplePaginate(30)
@@ -72,6 +75,8 @@ class IncidentController extends Controller
             'types' => (clone $base)->select('type', 'type_label')->distinct()->orderBy('type')->get(),
             'lgas' => (clone $base)->whereNotNull('lga')->distinct()->orderBy('lga')->pluck('lga')->push($request->user()->lga)->filter()->unique()->sort()->values(),
             'lga' => $filters['lga'],
+            'clusters' => $triage->clusters(Settings::showingRehearsal(), $filters['lga']),
+            'aiOn' => $ai->enabled(),
         ]);
     }
 
@@ -118,5 +123,16 @@ class IncidentController extends Controller
         return $request->expectsJson()
             ? response()->json(['status' => $incident->responseStatus(), 'message' => $message])
             : back()->with('status', $message);
+    }
+
+    /**
+     * Run the triage (again) for one incident.
+     */
+    public function triage(Request $request, Incident $incident, IncidentTriage $triage): RedirectResponse|JsonResponse
+    {
+        $incident = $triage->triage($incident->forceFill(['triage_attempts' => 0]));
+        $message = $incident->triage_error ? 'Triage failed: '.$incident->triage_error : "Triaged {$incident->reference}.";
+
+        return $request->expectsJson() ? response()->json(['message' => $message]) : back()->with($incident->triage_error ? 'error' : 'status', $message);
     }
 }

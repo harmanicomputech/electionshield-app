@@ -217,4 +217,13 @@ class SystemController extends Controller
 
         return back()->with('status', $view === 'rehearsal' ? 'Dashboards now show rehearsal data.' : 'Dashboards now show real results.');
     }
+
+    public function aiAssist(Request $request): RedirectResponse
+    {
+        $on = $request->validate(['on' => ['required', 'boolean']])['on'];
+        Settings::set('ai.assist', $on ? '1' : '0');
+        Audit::record('settings.ai_assist', $on ? 'Switched AI assistance on' : 'Switched AI assistance off');
+
+        return back()->with('status', $on ? 'AI assistance is on.' : 'AI assistance is off. Rule checks and duplicate spotting carry on.');
+    }
 }

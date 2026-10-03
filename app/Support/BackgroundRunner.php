@@ -2,6 +2,9 @@
 
 namespace App\Support;
 
+use App\Services\Ai\IncidentTriage;
+use App\Services\Ai\ResultChecks;
+use App\Services\Ai\SituationBriefs;
 use App\Services\Irev\IrevWatcher;
 use App\Services\UssdSync;
 use Illuminate\Support\Facades\Artisan;
@@ -120,6 +123,24 @@ class BackgroundRunner
         }
 
         $this->watchIrev();
+        $this->assist();
+    }
+
+    /**
+     * Election-day assistance: triage new incidents (every run), check new
+     * results and read EC8A photos, and write the situation brief when due
+     * (once per minute slot).
+     */
+    private function assist(): void
+    {
+        $this->attempt(fn () => app(IncidentTriage::class)->step());
+
+        $slot = now()->format('Y-m-d H:i');
+        if (Settings::get('runner.assist') !== $slot) {
+            Settings::set('runner.assist', $slot);
+            $this->attempt(fn () => app(ResultChecks::class)->step());
+            $this->attempt(fn () => app(SituationBriefs::class)->step());
+        }
     }
 
     /**

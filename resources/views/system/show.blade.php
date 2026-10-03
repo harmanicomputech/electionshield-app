@@ -148,6 +148,19 @@
             <dd>{!! $uploadMb >= $videoMb ? '<span class="badge good">✓ '.$uploadMb.' MB</span>' : '<span class="badge warn">'.$uploadMb.' MB</span>' !!} <span class="muted">videos up to {{ $videoMb }} MB are allowed{{ $uploadMb < $videoMb ? ': raise upload_max_filesize and post_max_size in DirectAdmin → PHP settings (public_html/.user.ini asks for 128 MB)' : '' }}</span></dd>
             <dt>Reading IReV sheets with AI</dt>
             <dd>{!! filled(config('services.anthropic.key')) ? '<span class="badge good">✓ On</span>' : '<span class="badge">Off</span>' !!} <span class="muted">{{ filled(config('services.anthropic.key')) ? config('services.anthropic.model') : 'set ANTHROPIC_API_KEY in .env' }}</span></dd>
+            <dt>Election-day AI</dt>
+            <dd>
+                @php($assist = \App\Support\Settings::get('ai.assist', '1') === '1')
+                {!! ! filled(config('services.anthropic.key')) ? '<span class="badge">Off</span> <span class="muted">set ANTHROPIC_API_KEY in .env</span>' : ($assist ? '<span class="badge good">✓ On</span>' : '<span class="badge warn">Switched off</span>') !!}
+                <span class="muted">incident triage, EC8A photo checks, situation briefs (rule checks and duplicates work without it)</span>
+                @if (filled(config('services.anthropic.key')))
+                    <form method="post" action="{{ route('system.ai-assist') }}" style="margin-top:6px">
+                        @csrf
+                        <input type="hidden" name="on" value="{{ $assist ? 0 : 1 }}">
+                        <button class="button secondary" type="submit">{{ $assist ? 'Switch AI assistance off' : 'Switch AI assistance on' }}</button>
+                    </form>
+                @endif
+            </dd>
             <dt>Agent sign-in</dt>
             <dd>{!! app(\App\Services\UssdApi::class)->enabled() ? '<span class="badge good">✓ Through the USSD service</span>' : '<span class="badge bad">✗ Set USSD_API_TOKEN</span>' !!}</dd>
         </dl>

@@ -29,6 +29,8 @@
         'intelligence' => 'M3 21V10m6 11V4m6 17v-8m6 8V7M2 21h20',
         'locations' => 'M12 2v3m0 14v3M2 12h3m14 0h3M12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12Zm0-3a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z',
         'install' => 'M12 3v12m-5-5 5 5 5-5M5 21h14',
+        'brief' => 'M5 4h14v16H5V4Zm3 4h8M8 12h8M8 16h5',
+        'checks' => 'M9 11l3 3 8-8M20 12v7a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h11',
         'logout' => 'M15 4h4v16h-4M10 8l-4 4 4 4M6 12h11',
     ];
 
@@ -42,6 +44,7 @@
         ],
         'Election day' => [
             ['dashboard', 'Dashboard', $icon['dashboard'], ['dashboard'], \App\Support\Permission::VIEW_DASHBOARDS],
+            ['brief', 'Situation brief', $icon['brief'], ['brief'], \App\Support\Permission::VIEW_DASHBOARDS],
             ['incidents', 'Incidents', $icon['incidents'], ['incidents'], \App\Support\Permission::VIEW_INCIDENTS],
             ['monitor', 'Polling units', $icon['monitor'], ['monitor', 'monitor.*'], \App\Support\Permission::VIEW_DASHBOARDS],
             ['agents', 'Agents', $icon['agents'], ['agents', 'agents.*'], \App\Support\Permission::VIEW_AGENTS],
@@ -50,6 +53,7 @@
         ],
         'Results' => [
             ['collation', 'Collation', $icon['collation'], ['collation', 'collation.*'], \App\Support\Permission::VIEW_DASHBOARDS],
+            ['result-checks', 'Result checks', $icon['checks'], ['result-checks'], \App\Support\Permission::VIEW_DASHBOARDS],
             ['spread', '25% rule', $icon['spread'], ['spread'], \App\Support\Permission::VIEW_DASHBOARDS],
             ['compare', 'Official vs PVT', $icon['compare'], ['compare', 'compare.*', 'official', 'official.*'], \App\Support\Permission::VIEW_DASHBOARDS],
             ['photos', 'Photos & videos', $icon['photos'], ['photos', 'photos.*', 'media'], \App\Support\Permission::VIEW_DASHBOARDS],

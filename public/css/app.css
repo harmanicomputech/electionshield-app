@@ -682,3 +682,27 @@ a, button, summary, label, select, input, textarea, .button { touch-action: mani
 @media (min-width: 1024px) { .vi-stats.five { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
 .vi-est { margin: -4px 0 16px; }
 .vi-voters .vi-est-tag { display: inline; }
+
+/* Election-day AI assistance */
+.ai-clusters { border-left: 4px solid var(--bad); }
+.ai-clusters h2 { font-size: 16px; margin: 0 0 6px; }
+.ai-clusters ul { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
+.ai-triage { margin: 6px 0; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.ai-triage .ai-line { flex-basis: 100%; margin: 2px 0 0; }
+.badge.ai-critical { background: var(--bad); color: #fff; }
+.badge.ai-high { background: var(--bad-bg); color: var(--bad); }
+.badge.ai-medium { background: var(--warn-bg); color: var(--warn); }
+.badge.ai-low { background: var(--surface-2); color: var(--text-2); }
+.check-flags { margin: 8px 0; padding-left: 20px; display: grid; gap: 4px; }
+.check-flags li.serious { color: var(--bad); font-weight: 600; }
+.check-photo { display: flex; gap: 12px; align-items: flex-start; flex-wrap: wrap; margin: 8px 0; }
+.check-photo img { width: 120px; height: auto; border-radius: 8px; border: 1px solid var(--line); }
+.brief { border-left: 4px solid var(--brand); }
+.brief h2 { margin: 0 0 4px; font-size: 18px; }
+.brief ul { margin: 6px 0; padding-left: 20px; display: grid; gap: 4px; }
+.brief .brief-actions li { font-weight: 600; }
+.brief.older { border-left-color: var(--line); }
+.brief.older h2 { font-size: 16px; }
+.facts dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 0; }
+.facts dt { color: var(--text-2); }
+.facts dd { margin: 0; }

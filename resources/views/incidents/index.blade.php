@@ -27,6 +27,17 @@
 
 @include('partials.lga-map', ['map' => $map, 'title' => 'Where'])
 
+@if ($clusters->isNotEmpty())
+    <section class="card ai-clusters" aria-label="Clusters">
+        <h2>Several reports from one place</h2>
+        <ul>
+            @foreach ($clusters as $cluster)
+                <li><b>{{ $cluster['count'] }} reports in {{ $cluster['ward'] }} ward, {{ $cluster['lga'] }}</b> in the last hour: {{ collect($cluster['types'])->map(fn ($n, $type) => $n > 1 ? "{$type} ×{$n}" : $type)->implode(', ') }}. <a href="{{ route('monitor.ward', [$cluster['lga'], $cluster['ward']]) }}">Ward status →</a></li>
+            @endforeach
+        </ul>
+    </section>
+@endif
+
 <form class="filters" method="get" action="{{ route('incidents') }}">
     <input type="hidden" name="status" value="{{ $status }}">
     <div>
@@ -77,6 +88,16 @@
                 <span class="badge {{ $incident->channel === 'web' ? 'channel-web' : '' }}">via {{ $incident->channelLabel() }}</span>
             </div>
             <h3>{{ $incident->placeLabel() }}</h3>
+            @if ($incident->ai_priority || $incident->duplicate_of)
+                <div class="ai-triage">
+                    @if ($incident->ai_priority)<span class="badge ai-{{ $incident->ai_priority }}" title="Suggested by AI from the report">AI: {{ \App\Services\Ai\IncidentTriage::PRIORITIES[$incident->ai_priority] }}</span>@endif
+                    @if ($incident->ai_credibility)<span class="badge {{ $incident->ai_credibility === 'doubtful' ? 'warn' : '' }}" title="{{ $incident->ai_reason }}">{{ \App\Services\Ai\IncidentTriage::CREDIBILITY[$incident->ai_credibility] }}</span>@endif
+                    @if ($incident->duplicate_of)<span class="badge warn">Possible repeat of <a href="#incident-{{ $incident->duplicate_of }}">{{ $incident->duplicate_of }}</a></span>@endif
+                    @if ($incident->ai_summary)<p class="ai-line">{{ $incident->ai_summary }}</p>@endif
+                    @if ($incident->ai_action && ! $incident->resolved_at)<p class="ai-line"><b>Suggested:</b> {{ $incident->ai_action }}</p>@endif
+                    @if ($incident->ai_credibility && $incident->ai_reason)<p class="ai-line muted small">{{ $incident->ai_reason }}</p>@endif
+                </div>
+            @endif
             <div class="meta">
                 @if ($incident->lga && $incident->ward)
                     <a href="{{ route('monitor.ward', [$incident->lga, $incident->ward]) }}">{{ $incident->lga }} › {{ $incident->ward }}</a> ·
@@ -99,6 +120,12 @@
                     <form method="post" action="{{ route('incidents.acknowledge', $incident->reference) }}" data-queue="Acknowledge {{ $incident->reference }}">
                         @csrf
                         <button class="button" type="submit">Acknowledge</button>
+                    </form>
+                @endif
+                @if ($aiOn && ! $incident->resolved_at && (! $incident->ai_priority || $incident->triage_error))
+                    <form method="post" action="{{ route('incidents.triage', $incident->reference) }}" data-queue="Triage {{ $incident->reference }}">
+                        @csrf
+                        <button class="button secondary" type="submit">Triage with AI</button>
                     </form>
                 @endif
                 @if (! $incident->resolved_at)

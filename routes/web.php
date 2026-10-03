@@ -7,6 +7,7 @@ use App\Http\Controllers\Console\AgentController;
 use App\Http\Controllers\Console\AlertController;
 use App\Http\Controllers\Console\AuditController;
 use App\Http\Controllers\Console\AuthController;
+use App\Http\Controllers\Console\BriefController;
 use App\Http\Controllers\Console\BroadcastController;
 use App\Http\Controllers\Console\CollationController;
 use App\Http\Controllers\Console\CompareController;
@@ -24,6 +25,7 @@ use App\Http\Controllers\Console\OfficialResultController;
 use App\Http\Controllers\Console\PhotoController;
 use App\Http\Controllers\Console\PushController;
 use App\Http\Controllers\Console\ReportController;
+use App\Http\Controllers\Console\ResultCheckController;
 use App\Http\Controllers\Console\RoleController;
 use App\Http\Controllers\Console\SystemController;
 use App\Http\Controllers\Console\TownHallManageController;
@@ -175,6 +177,16 @@ Route::middleware('auth')->group(function () {
         Route::post('/incidents/{incident:reference}/acknowledge', [IncidentController::class, 'acknowledge'])->name('incidents.acknowledge');
         Route::post('/incidents/{incident:reference}/resolve', [IncidentController::class, 'resolve'])->name('incidents.resolve');
         Route::post('/incidents/{incident:reference}/reopen', [IncidentController::class, 'reopen'])->name('incidents.reopen');
+        Route::post('/incidents/{incident:reference}/triage', [IncidentController::class, 'triage'])->middleware('throttle:20,1')->name('incidents.triage');
+    });
+
+    // Election-day assistance: automatic checks and AI suggestions; people decide.
+    Route::middleware('can:'.Permission::VIEW_DASHBOARDS)->group(function () {
+        Route::get('/result-checks', [ResultCheckController::class, 'index'])->name('result-checks');
+        Route::post('/result-checks/{reference}/review', [ResultCheckController::class, 'review'])->middleware('can:'.Permission::ACKNOWLEDGE_RESULTS)->name('result-checks.review');
+        Route::post('/result-checks/{reference}/photo', [ResultCheckController::class, 'photo'])->middleware(['can:'.Permission::REVIEW_MEDIA, 'throttle:20,1'])->name('result-checks.photo');
+        Route::get('/brief', [BriefController::class, 'index'])->name('brief');
+        Route::post('/brief', [BriefController::class, 'store'])->middleware('throttle:4,1')->name('brief.store');
     });
 
     Route::get('/agents', [AgentController::class, 'index'])->middleware('can:'.Permission::VIEW_AGENTS)->name('agents');
@@ -279,5 +291,6 @@ Route::middleware('auth')->group(function () {
         Route::post('/system/polling-units', [SystemController::class, 'importRegister'])->name('system.polling-units');
         Route::post('/system/push-keys', [SystemController::class, 'pushKeys'])->name('system.push-keys');
         Route::post('/system/data-view', [SystemController::class, 'dataView'])->name('system.data-view');
+        Route::post('/system/ai-assist', [SystemController::class, 'aiAssist'])->name('system.ai-assist');
     });
 });
