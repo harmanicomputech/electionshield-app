@@ -912,6 +912,8 @@
    */
   var progress = null;
   var progressTimer = null;
+  var slowTimer = null;
+  var pill = null;
   function startProgress() {
     if (!progress) {
       progress = document.createElement('div');
@@ -922,12 +924,27 @@
     progress.classList.remove('done');
     void progress.offsetWidth; // restart the animation
     progress.classList.add('on');
+    body.classList.add('is-navigating');
+    // On a slow network, say so (and dim the old page) so nobody taps again.
+    clearTimeout(slowTimer);
+    slowTimer = setTimeout(function () {
+      if (!pill) {
+        pill = document.createElement('div');
+        pill.className = 'nav-pill';
+        pill.setAttribute('role', 'status');
+        pill.textContent = 'Loading…';
+        body.appendChild(pill);
+      }
+      body.classList.add('nav-slow');
+    }, 450);
     clearTimeout(progressTimer);
     // A download or a slow answer never unloads the page: tidy up after a while.
     progressTimer = setTimeout(stopProgress, 20000);
   }
   function stopProgress() {
     clearTimeout(progressTimer);
+    clearTimeout(slowTimer);
+    body.classList.remove('is-navigating', 'nav-slow');
     if (progress) { progress.classList.remove('on'); }
     document.querySelectorAll('.is-busy').forEach(function (el) { el.classList.remove('is-busy'); el.removeAttribute('aria-busy'); });
     document.querySelectorAll('form[data-submitting]').forEach(function (form) { delete form.dataset.submitting; });
@@ -943,8 +960,79 @@
     if (!url || url.origin !== location.origin || /\.csv$|\/backup$|^\/media\//.test(url.pathname)) { return; }
     if (url.pathname === location.pathname && url.search === location.search && url.hash) { return; } // same-page anchor
     link.classList.add('is-busy');
+    // The tapped tab is the current one straight away.
+    var bar = link.closest('.tabbar');
+    if (bar) {
+      bar.querySelectorAll('a.on').forEach(function (a) { a.classList.remove('on'); });
+      var more = bar.querySelector('.tab-more');
+      if (more) { more.classList.toggle('is-on', !!link.closest('.tab-more')); }
+      if (!link.closest('.tab-more')) { link.classList.add('on'); }
+    }
     startProgress();
   });
+
+  /*
+   * Press feedback on phones: a highlight and a ripple the moment a finger
+   * touches a button, tab or menu item (iOS Safari doesn't show :active
+   * reliably), kept long enough to be seen.
+   */
+  var PRESSABLE = '.button, button, summary, .tabbar a, .sheet a, .menu a, .side-nav a, .side-foot > a, .tabs a, .range-chips a, .login-tabs a, a.stat, .stat a, a.rowlink, .map-grid .tile';
+  var reducedMotion = safe(function () { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; });
+  var pressed = null;
+  var pressedAt = 0;
+  function ripple(el, event) {
+    if (reducedMotion || el.tagName === 'SUMMARY' && !el.closest('.tabbar')) { return; }
+    var rect = el.getBoundingClientRect();
+    if (!rect.width || rect.width > 700) { return; }
+    if (getComputedStyle(el).position === 'static') { el.style.position = 'relative'; }
+    var host = document.createElement('span');
+    host.className = 'es-ripple';
+    host.setAttribute('aria-hidden', 'true');
+    var dot = document.createElement('span');
+    var size = Math.max(rect.width, rect.height) * 2;
+    dot.style.width = dot.style.height = size + 'px';
+    dot.style.left = (event.clientX - rect.left - size / 2) + 'px';
+    dot.style.top = (event.clientY - rect.top - size / 2) + 'px';
+    host.appendChild(dot);
+    el.appendChild(host);
+    setTimeout(function () { if (host.parentNode) { host.parentNode.removeChild(host); } }, 600);
+  }
+  function release() {
+    if (!pressed) { return; }
+    var el = pressed;
+    pressed = null;
+    setTimeout(function () { el.classList.remove('is-pressed'); }, Math.max(0, 140 - (Date.now() - pressedAt)));
+  }
+  document.addEventListener('pointerdown', function (event) {
+    if (event.button > 0 || !event.target.closest) { return; }
+    var el = event.target.closest(PRESSABLE);
+    if (!el || el.disabled || el.getAttribute('aria-disabled') === 'true') { return; }
+    release();
+    pressed = el;
+    pressedAt = Date.now();
+    el.classList.add('is-pressed');
+    ripple(el, event);
+  }, { passive: true });
+  ['pointerup', 'pointercancel', 'dragstart'].forEach(function (type) { document.addEventListener(type, release, { passive: true }); });
+
+  /*
+   * The phone "More" sheet: the page behind doesn't scroll while it is open;
+   * the backdrop (part of its summary), Escape, Back and choosing a page close it.
+   */
+  document.querySelectorAll('[data-sheet]').forEach(function (sheet) {
+    sheet.addEventListener('toggle', function () { body.classList.toggle('sheet-open', sheet.open); });
+    sheet.addEventListener('click', function (event) {
+      var link = event.target.closest && event.target.closest('.sheet a[href]');
+      if (link) { setTimeout(function () { sheet.open = false; }, 120); }
+    });
+  });
+  document.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape') { document.querySelectorAll('[data-sheet][open]').forEach(function (sheet) { sheet.open = false; }); }
+  });
+  window.addEventListener('pageshow', function () { document.querySelectorAll('[data-sheet][open]').forEach(function (sheet) { sheet.open = false; }); });
+
+  // The page-load animation plays once, not again when the page refreshes itself.
+  setTimeout(function () { body.classList.remove('page-in'); }, 1000);
 
   // Runs after the forms' own handlers, so background forms (which cancel the submit) are skipped.
   document.addEventListener('submit', function (event) {

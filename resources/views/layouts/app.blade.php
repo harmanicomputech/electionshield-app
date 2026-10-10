@@ -85,6 +85,9 @@
     $tabs = array_slice(array_values(array_filter($all, fn ($item) => in_array($item[0], ['field', 'field.result', 'field.incident', 'field.history', 'dashboard', 'incidents', 'monitor', 'collation'], true))), 0, 4);
     $tabNames = array_column($tabs, 0);
     $more = array_values(array_filter($all, fn ($item) => ! in_array($item[0], $tabNames, true)));
+    // The phone "More" sheet: the same sections as the sidebar, without the tabs.
+    $moreSections = array_values(array_filter(array_map(fn ($section) => [$section[0], array_values(array_filter($section[1], fn ($item) => ! in_array($item[0], $tabNames, true)))], $sections), fn ($section) => $section[1] !== []));
+    $moreOn = collect($more)->contains(fn ($item) => $active($item[3]) === 'on') || request()->routeIs('account', 'push', 'install');
     $short = ['monitor' => 'PUs', 'collation' => 'Results', 'field.result' => 'Result', 'field.incident' => 'Incident', 'field.history' => 'History'];
 @endphp
 <!DOCTYPE html>
@@ -112,7 +115,7 @@
     <script type="speculationrules">{"prefetch": [{"source": "document", "eagerness": "conservative", "where": {"and": [{"href_matches": "/*"}, {"not": {"href_matches": "/logout"}}, {"not": {"href_matches": "/*.csv"}}, {"not": {"href_matches": "/system/backup"}}, {"not": {"href_matches": "/media/*"}}, {"not": {"href_matches": "/cron/*"}}, {"not": {"selector_matches": "[download], [data-no-progress], [target]"}}]}}]}</script>
     @endif
 </head>
-<body @class(['has-sidebar' => $user]) @if ($user) data-cache-pages="1" @endif @if ($user?->sharesLocation()) data-location="{{ route('location.ping') }}" @endif @if ($user && ($user->can('respond_incidents') || $user->can('acknowledge_results') || $user->can('view_locations'))) data-alerts="{{ route('alerts') }}" data-snooze-url="{{ route('alerts.snooze') }}" @endif>
+<body @class(['has-sidebar' => $user, 'page-in']) @if ($user) data-cache-pages="1" @endif @if ($user?->sharesLocation()) data-location="{{ route('location.ping') }}" @endif @if ($user && ($user->can('respond_incidents') || $user->can('acknowledge_results') || $user->can('view_locations'))) data-alerts="{{ route('alerts') }}" data-snooze-url="{{ route('alerts.snooze') }}" @endif>
     @if ($user)
         <aside class="sidebar" aria-label="Main">
             <a class="side-brand" href="{{ route($user->homeRoute()) }}"><img src="/icons/icon-192.png" alt="" width="36" height="36"><span>Election Shield<small>Ebonyi {{ \Illuminate\Support\Carbon::parse(config('election.date'))->format('Y') }}</small></span></a>
@@ -198,13 +201,40 @@
                     {{ $short[$name] ?? $label }}
                 </a>
             @endforeach
-            <details>
-                <summary>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h.01M12 12h.01M19 12h.01"/></svg>
+            <details class="tab-more {{ $moreOn ? 'is-on' : '' }}" data-sheet>
+                <summary aria-label="More pages">
+                    <span class="icon-wrap">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+                        @if ($pendingCorrections && in_array('corrections', array_column($more, 0), true))<span class="count pending" aria-label="{{ $pendingCorrections }} corrections waiting">{{ $pendingCorrections }}</span>@endif
+                    </span>
                     More
                 </summary>
-                <div class="menu">
-                    @include('partials.more-menu')
+                <div class="sheet" role="dialog" aria-label="All pages">
+                    <div class="sheet-grip" aria-hidden="true"></div>
+                    <div class="sheet-user">
+                        <span class="avatar" aria-hidden="true">{{ \Illuminate\Support\Str::upper(\Illuminate\Support\Str::substr($user->name, 0, 1)) }}</span>
+                        <span class="who">{{ $user->name }}<small>{{ $user->roleName() }}{{ $user->lga ? ' · '.$user->lga : '' }}</small></span>
+                    </div>
+                    @foreach ($moreSections as [$heading, $items])
+                        <p class="sheet-heading">{{ $heading }}</p>
+                        <div class="sheet-grid">
+                            @foreach ($items as [$name, $label, $path, $covers])
+                                <a href="{{ route($name) }}" class="{{ $active($covers) }}" @if ($active($covers)) aria-current="page" @endif>
+                                    <span class="tile-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ $path }}"/></svg>
+                                        @if ($name === 'corrections' && $pendingCorrections)<span class="count pending" aria-label="{{ $pendingCorrections }} waiting">{{ $pendingCorrections }}</span>@endif
+                                    </span>
+                                    <span class="tile-label">{{ $label }}</span>
+                                </a>
+                            @endforeach
+                        </div>
+                    @endforeach
+                    <div class="sheet-list">
+                        <a href="{{ route('account') }}" class="{{ $active('account') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ $icon['account'] }}"/></svg>My account</a>
+                        <a href="{{ route('push') }}" class="{{ $active('push') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ $icon['push'] }}"/></svg>Notifications</a>
+                        <a href="{{ route('install') }}" class="{{ $active('install') }}" data-get-app><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ $icon['install'] }}"/></svg>Get the app</a>
+                        <form method="post" action="{{ route('logout') }}" data-logout>@csrf<input type="hidden" name="push_endpoint" data-push-endpoint><button type="submit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ $icon['logout'] }}"/></svg>Log out</button></form>
+                    </div>
                 </div>
             </details>
         </nav>
